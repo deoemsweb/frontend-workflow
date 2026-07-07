@@ -94,7 +94,7 @@ Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码�
 3. **按类别分组**：颜色、间距、字号、行高、圆角、阴影
 4. **与 Figma Variables/Styles 命名对齐**（如设计稿使用了 Figma Variables，沿用其命名）
 
-### 2.3 Design Token CSS 变量模板
+### 2.3 Design Token CSS 变量模板示例：
 
 ```css
 :root {
@@ -159,7 +159,7 @@ Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码�
 
 ## 三、Figma 节点到 HTML/CSS 结构映射规则
 
-### 3.1 Auto Layout → Flexbox / Grid 映射表
+### 3.1 Auto Layout → Flexbox / Grid 映射表示例：
 
 | Figma Auto Layout 属性 | CSS 对应属性 |
 |-------------------------|-------------|

@@ -31,46 +31,62 @@ frontend-workflow-skills/
 Figma 设计稿
   │
   ▼
-AI Coding 生成静态页面
+AI Coding 生成静态页面                                    【生成 Agent】
   │   · figma-design-constraint：设计稿分析、还原约束
   │   · frontend-engineering-standards：工程实现规范
   ▼
-人工验收静态页面，然后调用 agent 微调还原度
-  │   · figma-design-constraint：视觉偏差检查与修正、
-  │     1) 测量抽查：DevTools 盒模型数值 vs Figma 数值
-  │     2) 颜色校验：取色器对比实际色值与设计稿色值
-  │     3) 逐项过 QA Checklist（布局 / 颜色 / 字体 / 资源 / 内容 / 交互状态 / 可访问性 / 对比度）
-  │     4) 发现偏差 → 调用 agent 按"只对齐 Figma、不自行美化"原则修正
+检查 Agent（只读）跑 QA Checklist                         【检查】
+  │   · 布局 / 颜色 / 字体 / 资源 / 内容 / 交互状态 / a11y / 对比度 / 代码质量
+  │   · 发现偏差 → 回流生成 Agent 修正，复检直到通过
   ▼
-生成 OpenSpec PRD 文档
+人工验收 + agent 微调还原度                                【确认 Gate·人工】
+  │   · figma-design-constraint：测量抽查 / 颜色校验 / 偏差修正
+  ▼
+生成 OpenSpec PRD 文档                                    【生成 Agent】
   │   · figma-to-openspec-prd
-  │     ├ 根据产品提供的 Figma 原型图生成 OpenSpec PRD（specs / proposal / design / tasks）
-  │     └ 根据后端提供的 Swagger API JSON 补齐 API 列表
-  │        · 校准页面功能规格
-  │        · 补齐业务状态 / 权限 / 校验 / 异常态
+  │     ├ Figma 原型 → PRD（specs / proposal / design / tasks）
+  │     └ Swagger API JSON 补齐 API 列表 / 业务状态 / 权限 / 校验 / 异常态
   ▼
-AI Coding 生成业务逻辑并绑定到静态页面
+检查 Agent（只读）跑第八章质量清单                         【检查】
+  │   · SHALL 情态 / Scenario 可验证 / 拆解粒度 / 可追溯
+  │   · 偏差回流修正，复检直到通过
+  ▼
+人工确认需求                                              【确认 Gate·人工】
+  │
+  ▼
+AI Coding 生成业务逻辑并绑定到静态页面                     【生成 Agent】
   │   · frontend-engineering-standards
-  │     ├ 依据 PRD tasks.md 按阶段实现业务逻辑
-  │     ├ API 集成：统一请求封装 + 三态（loading / error / empty）+ 错误码处理 + 请求取消防竞态
-  │     ├ 状态管理：按决策树决定状态存放（Store / 本地 state）
-  │     ├ 类型安全：TS 类型定义、Props 接口、禁止 any
-  │     ├ 安全约束：XSS 防护、输入验证、敏感信息保护
-  │     └ 将静态页面占位数据替换为真实 API 数据，绑定交互行为
+  │     ├ 依据 PRD tasks.md 按阶段实现
+  │     ├ API 集成（统一封装 + 三态 + 错误码 + 防竞态）/ 状态管理 / 类型安全 / 安全约束
+  │     └ 占位数据替换为真实 API 数据，绑定交互行为
+  ▼
+检查 Agent（只读）跑工程硬约束                             【检查】
+  │   · 类型安全（禁 any）/ XSS / 输入校验 / 三态 / 防竞态 / 防抖节流
+  │   · 偏差回流修正，复检直到通过
+  ▼
+人工验收业务规则                                          【确认 Gate·人工】
+  │
   ▼
 验收
 ```
 
-各环节与 skill 对照：
+> **多 Agent 协作原则**：每个生成环节后挂独立**检查 Agent（只读、不写代码）**跑对应 checklist，偏差回流生成 Agent 修正直到通过；**确认 Gate 保留人工**把关视觉 / 业务 / 需求。
 
-| 环节 | 动作 | 使用的 skill |
-|------|------|--------------|
-| ① | Figma 设计稿（输入） | — |
-| ② | AI Coding 生成静态页面 | `figma-design-constraint`、`frontend-engineering-standards` |
-| ③ | 人工验收 + 调用 agent 微调 | `figma-design-constraint` |
-| ④ | 生成 OpenSpec PRD + Swagger 补齐 API / 业务状态 / 权限 / 校验 / 异常态 | `figma-to-openspec-prd` |
-| ⑤ | AI Coding 生成业务逻辑并绑定到静态页面（API 集成 / 状态管理 / 类型安全 / 安全约束） | `frontend-engineering-standards` |
-| ⑥ | 验收 | — |
+各环节（生成 / 检查 / 确认）与 skill 对照：
+
+| 环节 | 阶段 | 动作 | 使用的 skill |
+|------|------|------|--------------|
+| ① | 输入 | Figma 设计稿 | — |
+| ② | 生成 | AI Coding 生成静态页面 | `figma-design-constraint`、`frontend-engineering-standards` |
+| ③ | 检查 | 检查 Agent 跑 QA Checklist（布局 / 颜色 / 字体 / 资源 / a11y / 对比度） | `figma-design-constraint` |
+| ④ | 确认 | 人工验收 + agent 微调还原度 | `figma-design-constraint` |
+| ⑤ | 生成 | 生成 OpenSpec PRD + Swagger 补齐 API / 业务状态 / 权限 / 校验 / 异常态 | `figma-to-openspec-prd` |
+| ⑥ | 检查 | 检查 Agent 跑第八章质量清单（SHALL / Scenario / 拆解粒度 / 可追溯） | `figma-to-openspec-prd` |
+| ⑦ | 确认 | 人工确认需求 | — |
+| ⑧ | 生成 | AI Coding 生成业务逻辑并绑定到静态页面 | `frontend-engineering-standards` |
+| ⑨ | 检查 | 检查 Agent 跑工程硬约束（类型安全 / 安全 / 三态 / 防竞态 / 防抖节流） | `frontend-engineering-standards` |
+| ⑩ | 确认 | 人工验收业务规则 | — |
+| ⑪ | 终验 | 验收 | — |
 
 ## 如何扩展
 
