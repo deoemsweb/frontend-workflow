@@ -1,0 +1,1050 @@
+﻿---
+name: figma-design-constraint
+description: 约束 AI 在根据 Figma 设计稿还原前端代码时的视觉忠实度规则（布局、样式、Design Token、资源导出、技术栈/项目类型适配、工作流）。当用户要求 Figma 还原、设计稿还原、UI 还原、高保真还原、切图、设计稿转代码、Figma to Code 时使用此 skill。
+---
+
+# Figma 设计稿还原约束【最高优先级】
+
+此 skill 定义了 Figma 设计稿到代码的最高优先级还原规则。在任何前端开发任务涉及 Figma UI 稿时，本规则集优先级高于所有其他样式、美化或创意类指令。
+
+## 何时使用此 Skill
+
+当用户请求以下任一操作时，触发此 skill：
+
+- 根据 Figma 设计稿生成前端页面 / 组件代码
+- Figma 设计稿还原 / UI 还原 / 高保真还原
+- 设计稿转代码 / Figma to Code / 切图
+- 任何需要以 Figma 设计稿为输入的前端开发任务
+
+---
+
+## 一、核心规则
+
+### 规则 1：静态页面样式必须与 Figma UI 稿保持一致
+
+代码生成的静态页面在视觉效果上必须与 Figma 设计稿完全一致。所有可见元素的呈现，包括但不限于颜色、尺寸、位置、间距、边框、圆角，均须以设计稿为唯一标准。
+
+### 规则 2：禁止自行添加 Figma 中不存在的任何内容
+
+严禁在还原过程中添加以下 Figma 设计稿中不存在的项目：
+
+- 样式（CSS 属性）
+- 颜色（色值、渐变）
+- 阴影（box-shadow、text-shadow）
+- 边框（border 及其样式）
+- 图标（icon、svg）
+- 元素（HTML 元素 / DOM 节点）
+- 组件（额外或无关的 UI 组件）
+- 动效（transition、animation、transform）
+- 文案（文本内容、提示文字、占位文字）
+
+**判断标准**：设计稿中有则有，设计稿中无则无。任何在 Figma 中无法直接观察到的内容，均属禁止添加范畴。
+
+### 规则 3：所有样式属性以 Figma 为准
+
+以下所有样式维度必须严格取自 Figma 设计稿，不得自行调整：
+
+| 类别 | 具体项目 |
+|------|----------|
+| 布局 | Flex/Grid 方向、对齐方式、间距 |
+| 间距 | margin、padding、gap |
+| 字号 | font-size |
+| 行高 | line-height |
+| 字间距 | letter-spacing |
+| 颜色 | color、background-color、border-color |
+| 圆角 | border-radius |
+| 边框 | border-width、border-style、border-color |
+| 表格样式 | 表头样式、行高、边框、斑马纹 |
+| 按钮样式 | 尺寸、颜色、圆角、hover/active 状态 |
+| 弹窗样式 | 宽度、高度、遮罩、位置、动画 |
+
+### 规则 4：缺失的状态或样式不得自行补充
+
+- 如果 Figma 设计稿中只提供了某个组件的默认状态，则只还原默认状态
+- 不允许为 hover、active、focus、disabled、loading、empty、error 等状态自行设计样式
+- 不允许自行添加响应式断点、媒体查询等设计稿中未定义的布局变化
+
+### 规则 5：资源使用优先级
+
+1. **优先使用 Figma 中已有的资源**：图标、图片、插画等直接从 Figma 导出
+2. **无法导出时保留占位结构**：保留对应的 DOM 结构和尺寸占位，但不要创造新的视觉样式来替代
+3. **禁止自行寻找替代资源**：不要使用第三方图标库、占位图服务或自行绘制的图形来填充无法导出的资源位
+
+### 规则 6：严禁"美化"设计稿
+
+- 不要因为自认为某个设计"不好看"而修改颜色、间距、字号等任何视觉属性
+- 不要添加阴影、过渡效果、渐变等来"增强视觉效果"
+- 不要调整布局来实现自认为"更合理"的排列
+- **Figma 设计稿是唯一真理来源**，以像素级还原为目标
+
+---
+
+## 二、Design Token 体系
+
+### 2.1 什么是 Design Token
+
+Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码中以 CSS 自定义属性（CSS Variables）的形式统一定义和管理，确保整体一致性和可维护性。
+
+### 2.2 Design Token 提取原则
+
+从 Figma 设计稿中提取 Token 时遵循以下规则：
+
+1. **只提取 Figma 中实际使用的值**，不得自创 Token
+2. **命名反映用途而非数值**，如 `--color-primary` 而非 `--color-blue-500`
+3. **按类别分组**：颜色、间距、字号、行高、圆角、阴影
+4. **与 Figma Variables/Styles 命名对齐**（如设计稿使用了 Figma Variables，沿用其命名）
+
+### 2.3 Design Token CSS 变量模板
+
+```css
+:root {
+  /* ===== 颜色 ===== */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;       /* 仅当设计稿中有 hover 状态时定义 */
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-placeholder: #9ca3af;
+  --color-bg-page: #f9fafb;
+  --color-bg-card: #ffffff;
+  --color-border: #e5e7eb;
+  --color-divider: #f3f4f6;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  /* 仅定义图稿中实际出现的颜色，不得预先"补全"色阶 */
+
+  /* ===== 间距 ===== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 20px;
+  --spacing-2xl: 24px;
+  --spacing-3xl: 32px;
+
+  /* ===== 字号 ===== */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-title: 28px;
+
+  /* ===== 行高 ===== */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ===== 圆角 ===== */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* ===== 阴影（仅当设计稿中存在时定义） ===== */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+```
+
+### 2.4 Token 使用规范
+
+- **严禁在组件样式中硬编码色值/字号/间距**，必须引用 Token 变量
+- 示例：`color: var(--color-text-primary)` 而非 `color: #1f2937`
+- 如某样式值在 Token 表中不存在，应确认 Figma 中是否确实使用了该值，再决定是否新增 Token
+
+---
+
+## 三、Figma 节点到 HTML/CSS 结构映射规则
+
+### 3.1 Auto Layout → Flexbox / Grid 映射表
+
+| Figma Auto Layout 属性 | CSS 对应属性 |
+|-------------------------|-------------|
+| Horizontal direction | `flex-direction: row` |
+| Vertical direction | `flex-direction: column` |
+| Gap | `gap` |
+| Horizontal padding | `padding-left` / `padding-right` |
+| Vertical padding | `padding-top` / `padding-bottom` |
+| Padding (统一值) | `padding` |
+| Align top / left (hug) | `align-items: flex-start` |
+| Align center | `align-items: center` |
+| Align bottom / right | `align-items: flex-end` |
+| Space between | `justify-content: space-between` |
+| Packed (start) | `justify-content: flex-start` |
+| Packed (center) | `justify-content: center` |
+| Packed (end) | `justify-content: flex-end` |
+| Fill container | `flex: 1` 或 `width: 100%` / `height: 100%` |
+| Fixed width / height | 精确的 `width` / `height` + `flex-shrink: 0` |
+| Wrap | `flex-wrap: wrap` |
+| Min/Max constraints | `min-width` / `max-width` / `min-height` / `max-height` |
+
+### 3.2 Absolute Position 使用规则
+
+Figma 中的 Absolute Position 映射到 CSS `position: absolute`，但需遵守：
+
+- **只有 Figma 中明确使用了 Absolute Position 的节点才能使用绝对定位**
+- 不要为了方便而滥用绝对定位替代 Auto Layout / Flexbox
+- 使用绝对定位时，参考父容器边缘计算 `top` / `right` / `bottom` / `left` 值
+- 父容器须设置 `position: relative`
+
+### 3.3 Figma 节点类型 → HTML 语义标签映射表
+
+| Figma 节点类型 | 推荐 HTML 标签 | 说明 |
+|---------------|---------------|------|
+| Frame（页面容器） | `<main>`, `<section>`, `<article>` | 根据语义选择 |
+| Frame（布局容器） | `<div>` | 通用布局容器 |
+| Frame（可点击区域） | `<button>`, `<a>` | 根据交互意图选择 |
+| Group | `<div>` | 纯分组，无额外语义 |
+| Text | `<h1>`~`<h6>`, `<p>`, `<span>`, `<label>` | 根据文本层级和用途选择 |
+| Image / Icon | `<img>`, `<svg>` | 图片用 img，矢量图标用内联 svg |
+| Rectangle（纯装饰） | 使用 CSS 绘制（`background` / `border`） | 不创建额外 DOM 节点 |
+| Input 占位 | `<input>`, `<textarea>`, `<select>` | 表单控件 |
+| List 结构 | `<ul>` + `<li>` 或 `<dl>` + `<dt>` + `<dd>` | 列表类内容 |
+| Table 结构 | `<table>`, `<thead>`, `<tbody>`, `<tr>`, `<td>` | 表格类内容 |
+
+---
+
+## 四、精确测量与取值规范
+
+### 4.1 获取精确值的方法
+
+| 方法 | 优先级 | 适用场景 |
+|------|--------|----------|
+| Figma Dev Mode → Inspect 面板 | ⭐⭐⭐ 最高 | 获取 CSS 属性值最准确的来源 |
+| Figma 右键 → Copy as → CSS | ⭐⭐ 次选 | 快速获取近似值，需人工复核 |
+| 手动测量（Option+Hover） | ⭐ 备选 | Dev Mode 不可用时的兜底方案 |
+
+### 4.2 单位取舍与精度处理
+
+| 场景 | 规范 | 示例 |
+|------|------|------|
+| 整数 px 值 | 直接使用 | `width: 320px` |
+| 小数 px 值（≤ .5） | 向下取整 | Figma 12.3px → `12px` |
+| 小数 px 值（> .5） | 向上取整 | Figma 12.7px → `13px` |
+| 设计稿中精确小数（如 12.5px） | 保留原值 | `width: 12.5px` |
+| 字号 | 使用 px，不自行转为 rem | `font-size: 14px` |
+| 行高（无单位） | 使用 Figma 百分比换算 | Figma 150% → `line-height: 1.5` |
+| 行高（px 值） | 直接使用 px | `line-height: 22px` |
+| 颜色 alpha / opacity | 保留精度（最多 2 位小数） | `rgba(0,0,0,0.05)` |
+
+### 4.3 单位使用原则
+
+- **默认使用 px**：Figma 设计稿是像素级精确设计，px 是最直接的映射单位
+- **rem 转换需谨慎**：如项目已使用 rem 方案，仅在确认根字号基准（通常 16px）后进行换算
+- **禁止任意引入 vw/vh**：除非设计稿中明确有视口相关的百分比布局，否则不使用视口单位
+
+---
+
+## 五、可访问性（a11y）最小约束
+
+### 5.1 语义化 HTML 要求
+
+在不添加视觉元素的前提下，确保 HTML 结构具备基本语义：
+
+- 使用 `<button>` 而非 `<div onclick="...">` 表示可点击按钮
+- 使用 `<a href="...">` 表示链接跳转
+- 使用 `<nav>`, `<main>`, `<aside>`, `<header>`, `<footer>` 等语义化区域标签
+- 标题层级 `<h1>` → `<h6>` 保持连续，不跳级
+
+### 5.2 必要 ARIA 属性
+
+当交互元素缺少 Figma 中的视觉标签时，至少保障以下 ARIA 属性：
+
+```html
+<!-- 图标按钮：必须有 aria-label -->
+<button class="icon-btn" aria-label="搜索">
+  <img src="./assets/search.svg" alt="" />
+</button>
+
+<!-- 弹窗：必须有 role 和 aria-modal -->
+<div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <h2 id="modal-title">弹窗标题</h2>
+</div>
+
+<!-- 装饰性图标：使用 aria-hidden -->
+<img src="./assets/decor-icon.svg" alt="" aria-hidden="true" />
+```
+
+### 5.3 焦点管理
+
+- 表单元素保留默认焦点样式（浏览器 outline），除非 Figma 中明确定义了 focus 样式
+- 弹窗打开时焦点应移入弹窗，关闭时焦点应回到触发元素
+- Tab 键导航顺序应与视觉布局一致
+
+### 5.4 色彩对比度
+
+- 文本与背景色对比度至少 4.5:1（正文）、3:1（大文本 18px+）
+- 如 Figma 设计稿中对比度不足，应**报告问题但不自行修改色值**
+
+---
+
+## 六、代码组织与命名规范
+
+### 6.1 组件文件目录结构
+
+```
+src/
+├── components/
+│   └── UserProfile/
+│       ├── index.vue          # Vue 组件（或 .tsx 用于 React）
+│       ├── UserProfile.module.css   # 样式文件（CSS Modules）
+│       └── assets/            # 组件私有资源
+│           └── avatar-placeholder.svg
+├── styles/
+│   └── tokens.css             # Design Token 全局变量
+└── assets/
+    └── icons/                 # 全局图标资源
+```
+
+### 6.2 命名规范
+
+**CSS 类名（BEM 风格）**：
+
+```css
+/* Block */
+.user-card { }
+
+/* Block__Element */
+.user-card__avatar { }
+.user-card__name { }
+.user-card__description { }
+
+/* Block--Modifier（仅在设计稿中存在样式变体时使用） */
+.user-card--featured { }
+.user-card--compact { }
+```
+
+**重点**：
+- 不要为未在 Figma 中出现的变体创建 Modifier 类
+- 类名应描述用途而非样式，如 `.user-card__name` 而非 `.text-bold-blue`
+
+### 6.3 CSS 属性声明顺序
+
+按以下顺序组织 CSS 属性，提高可读性和一致性：
+
+1. **定位**：`position`, `top`, `right`, `bottom`, `left`, `z-index`
+2. **盒模型**：`display`, `flex-direction`, `justify-content`, `align-items`, `width`, `height`, `margin`, `padding`, `border`, `border-radius`
+3. **排版**：`font-family`, `font-size`, `font-weight`, `line-height`, `letter-spacing`, `text-align`, `color`
+4. **视觉**：`background`, `box-shadow`, `opacity`
+5. **其他**：`cursor`, `overflow`, `transition`（仅 Figma 中有定义时）
+
+---
+
+## 七、资源导出规范
+
+### 7.1 资源格式选择
+
+| 资源类型 | 首选格式 | 次选格式 | 说明 |
+|----------|---------|---------|------|
+| 图标（纯色） | SVG | — | 矢量无损、文件小、可改色 |
+| 图标（多色） | SVG | PNG @2x | 复杂图标优先 SVG |
+| 照片 / 渐变复杂图 | PNG @2x | WebP | 照片类位图资源 |
+| 插画 | SVG | PNG @2x | 扁平插画优先 SVG |
+| Logo | SVG | PNG @2x | 矢量优先 |
+
+### 7.2 分辨率规范
+
+- `@1x`：基准分辨率（直接使用 Figma 中的尺寸导出）
+- `@2x`：2 倍分辨率（Retina 屏幕适配），推荐用于位图资源
+- 不要无差别使用 @2x，图标类 SVG 不需要多倍分辨率
+
+### 7.3 压缩与优化
+
+- PNG 资源导出后建议通过工具压缩（TinyPNG / pngquant）
+- SVG 资源导出后去除 Figma 生成的冗余命名空间和注释
+- 大尺寸背景图可考虑 WebP 格式（需确认项目兼容性）
+
+---
+
+## 八、与现有组件库的共存策略
+
+### 8.1 场景判断优先级
+
+| 场景 | 优先级 | 处理方式 |
+|------|--------|----------|
+| Figma 使用了组件库中的组件 | ⭐⭐⭐ | 优先使用项目组件库，按 Figma props 配置 |
+| Figma 组件与组件库高度相似 | ⭐⭐ | 使用组件库，通过样式覆盖对齐 Figma |
+| Figma 组件在组件库中不存在 | ⭐ | 按 Figma 设计稿自定义编写 |
+| 组件库有但 Figma 中未使用 | ❌ 不使用 | 不要因为组件库"有这个功能"而引入 |
+
+### 8.2 样式覆盖原则
+
+```css
+/* ✅ 正确：基于 Figma 中的具体样式值覆盖组件库默认样式 */
+:deep(.el-button--primary) {
+  background-color: var(--color-primary);      /* 覆盖为 Figma 色值 */
+  border-radius: var(--radius-md);             /* 覆盖为 Figma 圆角 */
+  font-size: var(--font-size-base);            /* 覆盖为 Figma 字号 */
+}
+
+/* ❌ 错误：全量覆盖组件库样式，破坏组件库的交互逻辑（hover/focus/disabled） */
+:deep(.el-button--primary) {
+  all: unset;
+  /* ... 重新写全部样式 */
+}
+```
+
+### 8.3 冲突处理三大原则
+
+1. **Figma 优先**：当组件库默认样式与 Figma 设计稿不一致时，以 Figma 为准进行覆盖
+2. **最小覆盖**：只覆盖与 Figma 不同的属性，保留组件库的交互状态逻辑（如表单校验、loading 状态）
+3. **如无法调和**：当组件库的功能行为与 Figma 差异过大时，优先自建组件以精确还原 Figma
+
+---
+
+## 九、Figma Dev Mode 使用指南
+
+### 9.1 关键面板与字段
+
+| 面板区域 | 关键字段 | 用途 |
+|----------|---------|------|
+| Properties → Layout | Width, Height, Padding, Gap | 获取盒模型尺寸 |
+| Properties → Fill | Color, Opacity | 获取背景色/填充色 |
+| Properties → Stroke | Color, Width, Position | 获取边框颜色/宽度/位置 |
+| Properties → Typography | Font, Size, Weight, Line height, Letter spacing | 获取文本完整属性 |
+| Properties → Effects | Shadow, Blur, Spread | 获取阴影参数（仅当存在时） |
+| Properties → Corner radius | 四角圆角值 | 获取圆角 |
+| Properties → Auto layout | Direction, Gap, Align, Padding | 获取 Flex 布局参数 |
+| Code 面板 | CSS 代码片段 | 快速参考，需人工复核单位 |
+
+### 9.2 注意事项
+
+- Figma 生成的 CSS 可能包含冗余属性或非标准写法（如 `flex: none`），需人工筛选
+- Figma Variables 命名可作为 Design Token 命名的直接参考
+- Dev Mode 中的间距测量（Option + Hover）是最可靠的间距信息来源
+
+---
+
+## 十、还原验证清单 QA Checklist
+
+完成代码还原后，逐项自检：
+
+### 10.1 布局与尺寸 [ ] — [ ] — [ ] — [ ]
+- [ ] 每个容器宽度/高度与 Figma 一致
+- [ ] margin、padding、gap 值与 Figma 一致
+- [ ] Flex/Grid 方向与对齐方式与 Figma Auto Layout 一致
+- [ ] 元素的绝对定位位置与 Figma 一致
+
+### 10.2 颜色与视觉 [ ] — [ ] — [ ] — [ ] — [ ]
+- [ ] 所有文字颜色与 Figma 一致（包括 placeholder 颜色）
+- [ ] 背景色、边框色与 Figma 一致
+- [ ] 圆角值与 Figma 一致
+- [ ] 阴影（如有）参数与 Figma 一致
+- [ ] 渐变（如有）方向、色标与 Figma 一致
+
+### 10.3 字体与排版 [ ] — [ ] — [ ] — [ ]
+- [ ] font-family 与 Figma 一致
+- [ ] font-size 与 Figma 一致
+- [ ] font-weight 与 Figma 一致
+- [ ] line-height 与 Figma 一致
+
+### 10.4 资源与图标 [ ] — [ ] — [ ]
+- [ ] 所有图片/图标均来自 Figma 导出或保留占位
+- [ ] 图片/图标尺寸与 Figma 一致
+- [ ] 未使用第三方图标库替代
+
+### 10.5 内容与文案 [ ] — [ ] — [ ]
+- [ ] 所有文案内容与 Figma 完全一致
+- [ ] 未添加 Figma 中不存在的提示/说明/占位文字
+- [ ] 未添加 Figma 中不存在的 DOM 元素
+
+### 10.6 交互状态 [ ] — [ ] — [ ]
+- [ ] 未自行添加 Figma 中不存在的 hover/active/focus 样式
+- [ ] 未自行添加 Figma 中不存在的 disabled/loading/empty/error 状态
+- [ ] 未自行添加 transition/animation 动效
+
+### 10.7 可访问性 [ ] — [ ] — [ ]
+- [ ] 使用了语义化 HTML 标签（button/a/nav/main 等）
+- [ ] 图标按钮有 aria-label
+- [ ] 弹窗有 role="dialog" 和 aria-modal
+
+### 10.8 对比验证 [ ] — [ ]
+- [ ] 页面截图与 Figma 设计稿并列对比无明显差异
+- [ ] 在不同屏幕尺寸下（如适用）未出现异常布局
+
+### 10.9 代码质量与安全 [ ] — [ ] — [ ] — [ ] — [ ] — [ ]
+- [ ] TypeScript 类型定义完整，无 `any` 类型泄漏
+- [ ] 未使用 `v-html` / `dangerouslySetInnerHTML` 渲染未净化的用户输入
+- [ ] API 调用有统一的错误处理，非 AbortError 不被吞没
+- [ ] 组件/函数有必要的 JSDoc 注释
+- [ ] 无硬编码的 API Key / Token / 密码等敏感信息
+- [ ] 性能优化（防抖/节流/懒加载等）已按 frontend-engineering-standards skill 正确应用
+
+---
+
+## 十一、边界情况处理规范
+
+### 11.1 长文本溢出
+
+当内容文本可能超出 Figma 中预留的空间时：
+
+```css
+/* 单行截断 */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 多行截断（如 Figma 中限制了最大行数） */
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+```
+
+### 11.2 空状态
+
+- **如果 Figma 中包含空状态设计**：按照空状态设计稿还原
+- **如果 Figma 中不含空状态设计**：保留内容区域的 DOM 结构和尺寸占位，但不添加额外的空状态提示文案/图标
+- 不要自行添加「暂无数据」「请添加内容」等提示
+
+### 11.3 加载状态
+
+- 如果 Figma 中包含骨架屏/loading 设计，按设计稿还原
+- 如果 Figma 中不含加载状态，不要在代码中添加 loading 动画或骨架屏
+- 数据加载期间的空白/过渡状态由运行时数据控制，不由设计稿约束
+
+### 11.4 图片加载失败
+
+```html
+<!-- 保留 img 占位尺寸，不自定义失败回退图 -->
+<img
+  src="./assets/photo.png"
+  alt="照片"
+  width="160"
+  height="160"
+  onerror="this.style.visibility='hidden'"
+/>
+```
+
+### 11.5 响应式行为
+
+- 仅当 Figma 中存在不同断点的设计稿时，才实现对应的响应式布局
+- 禁止根据"移动端最佳实践"自行添加媒体查询
+- 如果 Figma 只有 PC 端设计稿，则只输出 PC 端代码
+
+---
+
+## 十二、前端技术栈判断与兼容
+
+在编写代码之前，必须先判断当前项目所属技术栈，并根据技术栈特性输出对应代码。
+
+### 12.1 技术栈自动识别
+
+通过检查项目关键文件判断技术栈：
+
+| 关键文件 / 特征 | 判断为 | 版本判断依据 |
+|----------------|-------|-------------|
+| `package.json` 含 `vue: ^2.x` | Vue 2 | 检查 `vue` 版本号 |
+| `package.json` 含 `vue: ^3.x` | Vue 3 | 检查 `vue` 版本号 |
+| `package.json` 含 `react: ^17/18/19` | React | 检查 `react` 版本号 |
+| 存在 `vite.config.ts` + `vue` | Vue 3 (Vite) | Vite 默认 Vue3 |
+| 存在 `vue.config.js` | Vue 2/3 (Vue CLI) | 进一步检查 package.json |
+| 存在 `next.config.js` | React (Next.js) | 全栈框架 |
+| 存在 `nuxt.config.ts` | Vue (Nuxt) | 全栈框架 |
+| 无框架依赖，纯 `.html` 文件 | 原生 HTML/CSS/JS | 无框架项目 |
+| 存在 `angular.json` | Angular | 企业级框架 |
+
+### 12.2 各技术栈代码风格差异
+
+#### Vue 2 (Options API)
+
+```vue
+<template>
+  <div class="user-card">
+    <img :src="avatar" class="user-card__avatar" alt="头像" />
+    <span class="user-card__name">{{ name }}</span>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'UserCard',
+  props: {
+    avatar: { type: String, required: true },
+    name: { type: String, default: '' }
+  }
+}
+</script>
+
+<style scoped>
+/* ✅ Vue2 默认使用 scoped CSS */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+</style>
+```
+
+#### Vue 3 (Composition API + `<script setup>`)
+
+```vue
+<template>
+  <div class="user-card">
+    <img :src="avatar" class="user-card__avatar" alt="头像" />
+    <span class="user-card__name">{{ name }}</span>
+  </div>
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  avatar: string
+  name?: string
+}>()
+</script>
+
+<style scoped>
+/* Vue3 推荐使用 scoped CSS 或 CSS Modules */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+</style>
+```
+
+#### React (Functional Component + TypeScript)
+
+```tsx
+import styles from './UserCard.module.css'
+
+interface UserCardProps {
+  avatar: string
+  name?: string
+}
+
+export const UserCard: React.FC<UserCardProps> = ({ avatar, name = '' }) => {
+  return (
+    <div className={styles.card}>
+      <img src={avatar} className={styles.avatar} alt="头像" />
+      <span className={styles.name}>{name}</span>
+    </div>
+  )
+}
+```
+
+```css
+/* UserCard.module.css */
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+```
+
+#### 原生 HTML/CSS/JS
+
+```html
+<div class="user-card">
+  <img src="./assets/avatar.png" class="user-card__avatar" alt="头像" />
+  <span class="user-card__name">用户名</span>
+</div>
+```
+
+### 12.3 样式方案兼容
+
+根据项目使用的样式方案输出对应格式：
+
+| 技术栈 | 推荐样式方案 | 触发特征 |
+|--------|------------|----------|
+| Vue 2/3 默认 | `<style scoped>` | 无特殊样式依赖 |
+| Vue 2/3 + Less | `<style scoped lang="less">` | `package.json` 含 `less` |
+| Vue 2/3 + Sass/SCSS | `<style scoped lang="scss">` | `package.json` 含 `sass` |
+| React 默认 | CSS Modules (`*.module.css`) | 常规 CRA/Vite React 项目 |
+| React + Tailwind | Tailwind 工具类 | `package.json` 含 `tailwindcss` |
+| React + styled-components | styled-components | `package.json` 含 `styled-components` |
+| 小程序 | `.wxss` / `.scss` | 小程序项目 |
+
+### 12.4 脚手架与构建工具适配
+
+| 构建工具 | 特征文件 | 资源路径写法 |
+|----------|---------|-------------|
+| Vite | `vite.config.ts` | `import img from '@/assets/icon.svg'` 或相对路径 |
+| Vue CLI | `vue.config.js` | `@/assets/icon.svg` |
+| Create React App | `react-scripts` | `import img from './assets/icon.svg'` |
+| Next.js | `next.config.js` | `import img from '@/public/icon.svg'` 或 `next/image` |
+| webpack 原生 | `webpack.config.js` | 取决于 alias 配置 |
+
+---
+
+## 十三、项目类型判断与兼容
+
+在编写代码之前，必须判断项目类型，并据此调整输出代码的写法。
+
+### 13.1 项目类型自动识别
+
+| 关键特征 | 项目类型 | 判断依据 |
+|---------|---------|----------|
+| `manifest.json` + `.wxml` 文件 | 微信小程序 | 小程序特有文件结构 |
+| `pages.json` + `uni.scss` | UniApp | UniApp 跨端框架 |
+| `app.json` + `app.wxss` | 微信小程序 | 小程序入口文件 |
+| `project.config.json` | 微信小程序 / 原生 | 微信开发者工具配置 |
+| `index.html` 含 `<meta viewport>` 移动端配置 | H5 移动端 | 视口设定为移动端 |
+| `index.html` 无移动端 viewport 限制 | PC 端 (默认) | 没有移动端适配特征 |
+| Figma 设计稿宽度 ≤ 750px | H5 移动端 | 设计稿宽度判定（辅助） |
+| Figma 设计稿宽度 ≥ 1200px | PC 端 | 设计稿宽度判定（辅助） |
+| 基于 npm 的项目 + 移动端 viewport | H5 (Vue/React) | Web 技术栈 + 移动端特征 |
+
+### 13.2 H5 移动端适配规范
+
+#### Viewport 设置
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+```
+
+#### rem 适配（设计稿基准 375px 或 750px）
+
+```css
+/* 以 375 设计稿为例，1rem = 100px（375 / 3.75 公式） */
+/* Figma 中 16px 的间距 → 0.16rem */
+
+html {
+  font-size: calc(100vw / 3.75);  /* 375设计稿 → 1rem = 100px */
+}
+
+/* 使用示例：Figma 中 16px → 0.16rem */
+.card {
+  padding: 0.16rem;
+  font-size: 0.14rem;  /* Figma 14px */
+  border-radius: 0.08rem;  /* Figma 8px */
+}
+```
+
+#### vw 适配（无需 JS 计算）
+
+```css
+/* 以 375 设计稿为例 */
+/* Figma 16px = 16/375*100 = 4.267vw */
+.card {
+  padding: 4.267vw;
+  font-size: 3.733vw;   /* Figma 14px */
+  border-radius: 2.133vw; /* Figma 8px */
+}
+```
+
+#### 安全区域适配（iPhone 刘海屏 / 底部横条）
+
+```css
+/* 顶部安全区域 */
+.header {
+  padding-top: constant(safe-area-inset-top);  /* iOS 11.0-11.2 */
+  padding-top: env(safe-area-inset-top);        /* iOS 11.2+ */
+}
+
+/* 底部安全区域 */
+.footer {
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+```
+
+#### 移动端 1px 边框问题
+
+```css
+/* Retina 屏幕下 1px 边框过粗的解决方案 */
+.hairline-border {
+  position: relative;
+}
+.hairline-border::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  background: #e5e7eb;
+  transform: scaleY(0.5);
+  transform-origin: 0 0;
+}
+```
+
+### 13.3 PC 端适配规范
+
+- **默认使用 px 单位**，不需要 rem/vw 换算
+- 如果 Figma 设计稿宽度为固定值（如 1440px），页面主体宽度对齐设计稿即可
+- 如果 Figma 设计稿为自适应布局，按 Auto Layout 规则还原 Flex/Grid
+- PC 端页面最小宽度建议按 Figma 设计稿宽度设置：`min-width: [设计稿宽度]px`
+
+### 13.4 微信小程序适配规范
+
+#### 核心约束
+
+| 项目 | 约束说明 |
+|------|----------|
+| 文件类型 | `.wxml`（模板）、`.wxss` 或 `.scss`（样式）、`.js`/`.ts`（逻辑） |
+| 单位 | 必须使用 **rpx**（responsive pixel），设计稿 375px → 1px = 2rpx，设计稿 750px → 1px = 1rpx |
+| HTML 标签 | 必须使用小程序组件：`<view>`, `<text>`, `<image>`, `<button>`, `<input>`, `<scroll-view>` 等 |
+| CSS 限制 | 不支持 `*` 通配符选择器、部分伪类不完全支持 |
+| Flexbox | 支持 `flex-direction`, `justify-content`, `align-items` 等核心属性 |
+| 组件 | 不支持自定义 HTML 标签，所有自定义组件需在 `.json` 中注册 |
+
+#### rpx 换算表
+
+| Figma (375px 设计稿) | rpx 值 |
+|----------------------|--------|
+| 1px | 2rpx |
+| 12px | 24rpx |
+| 14px | 28rpx |
+| 16px | 32rpx |
+| 20px | 40rpx |
+| 24px | 48rpx |
+| 32px | 64rpx |
+
+#### 小程序代码模板
+
+```xml
+<!-- user-card.wxml -->
+<view class="user-card">
+  <image src="{{avatar}}" class="user-card__avatar" mode="aspectFill" />
+  <text class="user-card__name">{{name}}</text>
+</view>
+```
+
+```css
+/* user-card.wxss */
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;       /* Figma 12px */
+  padding: 32rpx;   /* Figma 16px */
+}
+.user-card__avatar {
+  width: 80rpx;     /* Figma 40px */
+  height: 80rpx;
+  border-radius: 50%;
+}
+.user-card__name {
+  font-size: 28rpx; /* Figma 14px */
+  color: #1f2937;
+}
+```
+
+### 13.5 UniApp 适配规范
+
+#### 与原生小程序的关键差异
+
+| 差异点 | UniApp | 原生小程序 |
+|--------|--------|-----------|
+| 模板文件 | `.vue` 单文件组件 | `.wxml` + `.wxss` + `.js` |
+| 单位 | 统一使用 rpx（自动转换） | rpx |
+| HTML 标签 | `<view>`, `<text>`, `<image>` | 同左 |
+| 条件编译 | 支持 `#ifdef` / `#ifndef` | 不支持 |
+
+#### 条件编译示例（跨端兼容关键）
+
+```vue
+<template>
+  <view class="page">
+    <!-- #ifdef MP-WEIXIN -->
+    <view class="wx-only">仅微信小程序显示</view>
+    <!-- #endif -->
+
+    <!-- #ifdef H5 -->
+    <view class="h5-only">仅 H5 端显示</view>
+    <!-- #endif -->
+
+    <!-- 各端共用 -->
+    <view class="common">所有端都显示</view>
+  </view>
+</template>
+
+<style scoped>
+/* #ifdef MP-WEIXIN */
+.page {
+  /* 小程序端特有样式 */
+}
+/* #endif */
+
+/* #ifdef H5 */
+.page {
+  /* H5 端特有样式 */
+}
+/* #endif */
+</style>
+```
+
+#### UniApp 注意事项
+
+- `pages.json` 中配置页面路由和导航栏样式，不要遗漏
+- TabBar 页面的图标尺寸：建议 40x40px（@2x 80x80px）
+- 部分 CSS 属性在小程序端不支持（如 `backdrop-filter`），需通过条件编译降级处理
+- 不要在小程序端使用 `window` / `document` 等 Web API
+
+---
+
+## 十四、工作流程
+
+### 第零步：项目环境识别（新增，必须先行）
+
+在分析 Figma 设计稿之前，先判断项目的技术栈和项目类型：
+
+1. 检查项目文件（`package.json`、配置文件等），确定技术栈（Vue2/Vue3/React/原生）
+2. 检查项目特征（文件类型、`manifest.json`、`pages.json` 等），确定项目类型（H5/PC/小程序/UniApp）
+3. 确认项目的样式方案（Scoped CSS / CSS Modules / Tailwind / Less/Sass）
+4. 根据上述判断结果，调整后续代码输出的语法、单位和结构
+
+### 第一步：设计稿分析
+
+在编写任何代码前，必须完整分析 Figma 设计稿：
+
+1. 列出所有页面 / 组件及其层级结构
+2. 提取所有颜色、字号、行高、字间距、间距、圆角、阴影等设计 Token，构建 Token 表
+3. 识别所有状态（如 hover、active、disabled），**记录在 Figma 中实际出现的状态**
+4. 确认可导出资源（图标、图片）清单
+5. 标注每个 Figma 节点的 Auto Layout 属性，为 HTML/CSS 映射做准备
+
+### 第二步：编码还原
+
+按照 Figma 设计稿的结构和样式逐层还原，执行顺序：
+
+1. **先结构后样式**：先搭建语义化 HTML 骨架，再编写 CSS 样式
+2. **先布局后细节**：先建立 Flex/Grid 布局和盒模型，再填充字号、颜色等细节
+3. **先定义 Token、后引用**：全局 Token 变量先于组件样式编写
+
+每完成一个组件或区块时进行自查：
+
+- 该区块 / 组件在 Figma 中是否存在？（规则 2）
+- 所有样式值是否与设计稿完全一致？（规则 1、3）
+- 是否添加了设计稿中没有的状态或效果？（规则 4）
+- 使用的资源是否来自 Figma？（规则 5）
+- 是否因个人审美做出了调整？（规则 6）
+- HTML 标签是否语义化？（可访问性）
+- 是否使用了正确的单位？（技术栈/类型适配）
+- CSS 是否引用了 Token 而非硬编码值？（Token 体系）
+
+### 第三步：对比验证
+
+完成代码后执行以下验证流程：
+
+1. **快照对比**：将页面截图与 Figma 设计稿并列对比
+2. **测量抽查**：随机选取 3~5 个元素，在浏览器 DevTools 中对比其盒模型数值与 Figma 设计稿是否一致
+3. **颜色校验**：使用取色器工具对比页面实际色值与 Figma 设计稿色值是否一致
+4. **QA Checklist**：逐项过第十章还原验证清单，全部通过方可认为还原完成
+
+---
+
+## 十五、错误示例与正确做法
+
+### 错误示例 1：添加设计稿中不存在的动效
+
+```css
+/* ❌ 错误：设计稿中没有 hover 放大效果 */
+.card:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s ease;
+}
+
+/* ✅ 正确：只保留设计稿中存在的样式 */
+.card {
+  /* 仅包含 Figma 设计稿中定义的样式 */
+}
+```
+
+### 错误示例 2：自行调整颜色
+
+```css
+/* ❌ 错误：认为原色不够明显而加深 */
+.button-primary {
+  background-color: #1a56db; /* Figma 中是 #3b82f6 */
+}
+
+/* ✅ 正确：严格使用 Figma 色值 */
+.button-primary {
+  background-color: var(--color-primary); /* #3b82f6 */
+}
+```
+
+### 错误示例 3：添加设计稿中不存在的占位文案
+
+```html
+<!-- ❌ 错误：设计稿中没有这段提示文字 -->
+<p class="hint">请输入有效信息</p>
+
+<!-- ✅ 正确：设计稿中无此文案，不添加 -->
+```
+
+### 错误示例 4：自行补充缺失状态
+
+```css
+/* ❌ 错误：设计稿中只有默认状态，自行添加 disabled 样式 */
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ✅ 正确：只还原设计稿中存在的样式 */
+```
+
+### 错误示例 5：用第三方图标替代
+
+```html
+<!-- ❌ 错误：使用 FontAwesome 图标替代 Figma 中的图标 -->
+<i class="fas fa-search"></i>
+
+<!-- ✅ 正确：从 Figma 导出图标或保留占位 -->
+<img src="./assets/search-icon.svg" alt="搜索" />
+<!-- 或无法导出时 -->
+<span class="icon-placeholder" style="width: 24px; height: 24px;"></span>
+```
+
+### 错误示例 6：四舍五入 Figma 小数像素值
+
+```css
+/* ❌ 错误：Figma 中 gap 是 12.5px，自行向下取整为 12px */
+.container {
+  gap: 12px;
+}
+
+/* ✅ 正确：保留 Figma 中的精确值 */
+.container {
+  gap: 12.5px;
+}
+```
+
+### 错误示例 7：技术栈不匹配
+
+```vue
+<!-- ❌ 错误：在 Vue2 项目中使用了 Vue3 Composition API 语法 -->
+<script setup lang="ts">
+import { ref } from 'vue'
+const count = ref(0)
+</script>
+
+<!-- ✅ 正确：在 Vue2 项目中使用 Options API -->
+<script>
+export default {
+  data() {
+    return { count: 0 }
+  }
+}
+</script>
+```
+
+```xml
+<!-- ❌ 错误：在小程序中使用了 HTML 标签和 px 单位 -->
+<div class="card" style="padding: 16px;">
+  <span>文本</span>
+</div>
+
+<!-- ✅ 正确：使用小程序组件标签和 rpx 单位 -->
+<view class="card">
+  <text>文本</text>
+</view>
+```
+```css
+.card {
+  padding: 32rpx;
+}
+```
+
