@@ -26,14 +26,16 @@
    - 资源优先从 Figma 导出，无法导出保留占位结构，禁止用第三方图标库替代；
    - 严禁“美化”设计稿，Figma 是唯一真理来源。
 3. 用 Design Token（CSS 变量），禁止硬编码色值 / 字号 / 间距；**Token 仅在全局 `tokens.css`（`src/styles/tokens.css`，非 scoped）定义一次、入口 import 一次，组件 `<style>` 内只引用 `var(--token)`、绝不重复声明 `:root`/Token（scoped 下 `:root` 会失效）**。新增共用样式前**先查**项目 / 同模块既有 `tokens.css` 与工具类（见 2.6 复用优先），已存在则引用不新建；完成后**跑 Token lint（2.7：TOKEN-01/02/03/04）**，确保无组件内声明 `:root`/Token、无跨文件重复、无「应引用却新建」。
-4. 按第十章 QA Checklist 逐项自检（布局 / 颜色 / 字体 / 资源 / 内容 / 交互 / 可访问性 / 代码质量）。
-5. 完成后进入「检查（Agent 只读）」跑结构化偏差报告，单环节最多回流 3 次；到达人工 Gate（④）暂停等我验收。
+4. 实现前先检测技术栈并识别 UI 组件库（见 8.4.1），设计稿中的标准组件（按钮 / 输入 / 下拉 / 表格 / 弹窗 / 分页等）**优先自主选用库组件实现**、用最小覆盖对齐 Figma，不手写裸标签、不逐条询问选型；标准组件→库组件对照见 8.4.3 多栈映射表（Vue→ElementUI/Element Plus，React→Ant Design/MUI）。完成后**跑 UI 库 lint（2.7：UI-01/02/03）**：手写 `<table>` 改库表格组件、裸表单/按钮标签经核对已换库组件或确为自建、无跨栈组件混用。
+5. 按第十章 QA Checklist 逐项自检（布局 / 颜色 / 字体 / 资源 / 内容 / 交互 / 可访问性 / 代码质量）。
+6. 完成后进入「检查（Agent 只读）」跑结构化偏差报告，单环节最多回流 3 次；到达人工 Gate（④）暂停等我验收。
 
 【本项目（Vue2/JS/ElementUI）适配】
 - 用 Options API，非 Vue3 <script setup>；
 - 样式 <style scoped lang="scss">，禁止 inline style，动态样式用 :class；
 - 富文本用 v-rich-text 指令，禁用 v-html；
-- 与 ElementUI 共存策略：Figma 优先 + 最小覆盖。
+- 与 ElementUI 共存策略：Figma 优先 + 最小覆盖；标准组件（按钮/输入/下拉/表格/弹窗/分页等）优先用 ElementUI 组件实现，不手写裸标签（见 8.4 自主选型）。
+- 若技术栈为 React（antd）或 Vue3（Element Plus），按 8.4.3 多栈映射表选对应库组件（如 `a-button` / `a-input` / `a-table`、`el-button` 等），仍遵循 Figma 优先 + 最小覆盖。
 ```
 
 ## 模板 B：精简版（一行触发）
