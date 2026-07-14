@@ -1,8 +1,3 @@
-﻿---
-name: frontend-engineering-standards
-description: 通用前端工程规范，涵盖 TypeScript 类型安全、API 集成、状态管理、前端安全、性能优化、代码注释与 AI 不确定时处理协议。适用于任何前端开发任务（含非 Figma 还原场景）。
----
-
 # 前端工程通用规范
 
 ## 何时使用此 Skill

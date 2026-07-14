@@ -1,8 +1,3 @@
-﻿---
-name: figma-design-constraint
-description: 约束 AI 在根据 Figma 设计稿还原前端代码时的视觉忠实度规则（布局、样式、Design Token、资源导出、技术栈/项目类型适配、工作流）。当用户要求 Figma 还原、设计稿还原、UI 还原、高保真还原、切图、设计稿转代码、Figma to Code 时使用此 skill。
----
-
 # Figma 设计稿还原约束【最高优先级】
 
 此 skill 定义了 Figma 设计稿到代码的最高优先级还原规则。在任何前端开发任务涉及 Figma UI 稿时，本规则集优先级高于所有其他样式、美化或创意类指令。
