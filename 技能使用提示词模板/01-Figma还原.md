@@ -25,7 +25,7 @@
    - 缺失状态（hover / active / disabled / loading / empty / error）不得自行补充；
    - 资源优先从 Figma 导出，无法导出保留占位结构，禁止用第三方图标库替代；
    - 严禁“美化”设计稿，Figma 是唯一真理来源。
-3. 用 Design Token（CSS 变量），禁止硬编码色值 / 字号 / 间距。
+3. 用 Design Token（CSS 变量），禁止硬编码色值 / 字号 / 间距；**Token 仅在全局 `tokens.css`（`src/styles/tokens.css`，非 scoped）定义一次、入口 import 一次，组件 `<style>` 内只引用 `var(--token)`、绝不重复声明 `:root`/Token（scoped 下 `:root` 会失效）**。新增共用样式前**先查**项目 / 同模块既有 `tokens.css` 与工具类（见 2.6 复用优先），已存在则引用不新建；完成后**跑 Token lint（2.7：TOKEN-01/02/03/04）**，确保无组件内声明 `:root`/Token、无跨文件重复、无「应引用却新建」。
 4. 按第十章 QA Checklist 逐项自检（布局 / 颜色 / 字体 / 资源 / 内容 / 交互 / 可访问性 / 代码质量）。
 5. 完成后进入「检查（Agent 只读）」跑结构化偏差报告，单环节最多回流 3 次；到达人工 Gate（④）暂停等我验收。
 

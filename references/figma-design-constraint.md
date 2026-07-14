@@ -175,6 +175,70 @@ Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码�
 - 示例：`color: var(--color-text-primary)` 而非 `color: #1f2937`
 - 如某样式值在 Token 表中不存在，应确认 Figma 中是否确实使用了该值，再决定是否新增 Token
 
+### 2.5 Token 的定义位置与单一来源（防重复定义）
+
+- **全局只定义一次**：Design Token 的 `:root { --xxx }` 声明**只能出现在全局样式文件 `src/styles/tokens.css`**（或等价全局入口文件），并在应用入口（如 `main.js` / `main.ts`）`import` 一次，使其作用于整个文档。
+- **组件样式禁止重定义 Token**：严禁把 `:root { ... }` 整段复制到每个组件的 `<style>` 中。组件只应**消费**已有 Token（`var(--token)`），不重新声明。
+- **`<style scoped>` 的 Scope 陷阱（关键）**：在 Vue 单文件组件的 `<style scoped>` 内书写 `:root { ... }`，编译器会将其改写为 `:root[data-v-xxx]`；而 `<html>` 元素并不携带 `[data-v-xxx]` 属性，该规则**永不命中、Token 实际失效**。因此全局 Token **必须放在非 scoped 的全局样式文件**中，绝不能写在任意组件的 `<style scoped>` 内。
+- **缺失 Token 的处理**：若某组件需要的值在 `tokens.css` 中尚不存在，应将其补充进 `tokens.css` 的对应分组，而非在组件内就地声明。
+
+### 2.6 复用优先：先查后定义（防 Token 蔓延）
+
+在添加任何**共用样式**——包括 Design Token、工具类（如 `.flex-center` / `.text-ellipsis`）、SCSS mixin / function——之前，**必须先检索项目与同模块是否已有语义一致、取值一致的来源可直接引用**，确认不存在才新增。
+
+- **检索范围（按顺序）**：
+  1. 项目级全局 `src/styles/tokens.css`（或约定的全局样式入口）及其 `@import` 链；
+  2. 同模块 / 同目录已有的样式文件（如 `src/views/<module>/styles/*.scss`、`src/components/<X>/assets/*.scss`）；
+  3. 团队 / 组件库既有 Token 与工具类（如 ElementUI 的 SCSS 变量、设计系统）。
+- **判定「一致可复用」**：命名 / 用途 / 取值三者其一匹配即应复用，**禁止**新建近似重复（如已存在 `--color-primary` 又新建 `--color-blue-500`、已存在 `.text-ellipsis` 又新建 `.ellipsis-1`），避免多套「真相源」。
+- **有则引用，无则新增，新增仍归全局**：若已有可复用来源 → 直接 `var(--token)` / `@include mixin` / 引用类；仅当确实不存在时才新增，且新增的 Token 仍写入全局 `tokens.css` 单一来源（见 2.5），**不得写在组件内**。
+- **例外**：业务强耦合、仅本组件使用、且不具备复用价值的局部样式，可不入全局；但凡有「共用」意图，必须先查。
+
+### 2.7 Lint 校验规则（可自动执行）
+
+2.4~2.6 可下沉为机器可校验的 lint 项，在「第十章检查（Agent 只读）」阶段作为强制关卡运行（亦可作为 PR / CI 检查）。以下规则可直接用 ripgrep / Node 落地，**读模式执行、不写文件**：
+
+**LINT-FIGMA-TOKEN-01（error）｜组件内禁止声明 `:root` 或任何 `--token`**
+- 适用：`*.vue` 内 `<style>`（含 scoped）、组件级 `*.scss` / `*.css`（路径含 `components/`、`views/`、`pages/`，且非全局入口）。
+- 检测（ripgrep）：
+  `rg -n -P '(:root\s*\{|^\s*--[A-Za-z0-9-]+\s*:)' --glob '!src/styles/tokens.css' src/`
+- 例外：仅全局 `tokens.css` 及其 `@import` 链允许。
+- 修复：删除组件内声明，改为 `var(--token)`；缺失值补入 `tokens.css`。
+
+**LINT-FIGMA-TOKEN-02（error）｜同一 Token 名称禁止跨文件重复定义**
+- 检测：提取全仓库 `--token-name` 声明点，按名称计数，出现 ≥2 次即报错（全局入口同一文件内多次不算）。
+- Node 片段（读模式，输出重复项）：
+  ```js
+  const fs = require('fs'), path = require('path');
+  const root = process.argv[2] || 'src';
+  const decl = new Map();
+  (function walk(dir){
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (fs.statSync(full).isDirectory()) { if (name !== 'node_modules') walk(full); }
+      else if (/\.(vue|scss|css)$/.test(name) && !/tokens\.css$/.test(full)) {
+        const txt = fs.readFileSync(full, 'utf8');
+        for (const m of txt.matchAll(/--[A-Za-z0-9-]+\s*:/g)) {
+          const t = m[0].slice(0, -1).trim();
+          if (!decl.has(t)) decl.set(t, new Set());
+          decl.get(t).add(full);
+        }
+      }
+    }
+  })(root);
+  for (const [t, files] of decl) if (files.size > 1)
+    console.log(`DUP ${t}: ${[...files].join('  |  ')}`);
+  ```
+
+**LINT-FIGMA-TOKEN-03（error）｜先查后定义（对应 2.6）**
+- 检测：若组件文件内新声明了某 `--token`，而全局 `tokens.css` 已存在同名（或同值）变量 → 报错，应引用。
+- 实现：以 TOKEN-02 的结果比对 `tokens.css` 现有集合，交集即违规。
+
+**LINT-FIGMA-TOKEN-04（warn）｜共用样式复用提示**
+- 新增「工具类 / mixin」时，提示先检索项目 / 同模块是否已有等价实现；已有则引用。由检查 Agent 在偏差报告中以「复用建议」形式给出。
+
+> 闭环：检查 Agent 在阶段 ③ 运行以上 lint（执行 ripgrep / Node 脚本，读模式不写文件），以「结构化偏差报告」列出违规文件 / 行号 / 规则来源（2.5 / 2.6 / 2.7），单环节回流 ≤3 次；触发项见第十章 10.9。
+
 ---
 
 ## 三、Figma 节点到 HTML/CSS 结构映射规则
@@ -493,6 +557,9 @@ src/
 - [ ] 组件/函数有必要的 JSDoc 注释
 - [ ] 无硬编码的 API Key / Token / 密码等敏感信息
 - [ ] 性能优化（防抖/节流/懒加载等）已按 frontend-engineering-standards skill 正确应用
+- [ ] Design Token 仅在全局 `tokens.css` 定义一次，未在任意组件样式中重复声明 `:root` / Token 变量（见 2.5 Scope 陷阱）
+- [ ] 新增共用样式前已先检索项目 / 同模块既有 `tokens.css` 与工具类，有可复用的直接引用、未新建近似重复（见 2.6 复用优先）
+- [ ] 已运行 Token lint（2.7：TOKEN-01/02/03/04），无组件内声明 `:root`/Token、无跨文件重复定义、无「应引用却新建」的 Token
 
 ---
 
@@ -931,7 +998,7 @@ html {
 
 1. **先结构后样式**：先搭建语义化 HTML 骨架，再编写 CSS 样式
 2. **先布局后细节**：先建立 Flex/Grid 布局和盒模型，再填充字号、颜色等细节
-3. **先定义 Token、后引用**：全局 Token 变量先于组件样式编写
+3. **先定义 Token、后引用**：在「设计稿分析」阶段产出的 Token 表，统一写入**全局** `src/styles/tokens.css` 的 `:root` 中（在应用入口 `import` 一次）；各组件样式**只引用** `var(--token)`，**绝不**在组件 `<style>` 内重复声明 `:root` 或任何 Token 变量（见 2.5 Scope 陷阱）
 
 每完成一个组件或区块时进行自查：
 
@@ -1067,5 +1134,42 @@ export default {
 .card {
   padding: 32rpx;
 }
+```
+
+### 错误示例 8：在每个组件重复定义 Token
+
+```css
+/* ❌ 错误：把 :root Token 整段复制进每个组件，且 scoped 下 :root 会被改写为 :root[data-v-xxx] 而失效 */
+<style scoped>
+:root {
+  --color-primary: #3b82f6;
+  --spacing-md: 12px;
+  /* ... 整张 Token 表 ... */
+}
+.user-card { color: var(--color-primary); padding: var(--spacing-md); }
+</style>
+
+/* ✅ 正确：Token 只在全局 tokens.css 定义一次（非 scoped），组件只消费 */
+/* src/styles/tokens.css（在 main.js 中 import 一次） */
+:root {
+  --color-primary: #3b82f6;
+  --spacing-md: 12px;
+}
+/* UserCard.vue —— <style scoped> 内只引用，不声明 */
+.user-card { color: var(--color-primary); padding: var(--spacing-md); }
+```
+
+### 错误示例 9：未先查既有 tokens.css 就新建重复 / 近似 Token
+
+```css
+/* 项目 src/styles/tokens.css 已存在：--color-primary: #3b82f6; */
+
+/* ❌ 错误：未检索既有 tokens.css，又新建一个取值重复、命名不同的 Token，
+   造成多套「真相源」、后续维护漂移 */
+:root { --color-blue-500: #3b82f6; }   /* 写在组件 / 局部，且与 --color-primary 同值 */
+.btn { background: var(--color-blue-500); }
+
+/* ✅ 正确：先查后定义——发现 --color-primary 已存在，直接引用 */
+.btn { background: var(--color-primary); }
 ```
 

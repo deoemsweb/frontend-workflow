@@ -100,7 +100,7 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 5. 资源优先从 Figma 导出；无法导出保留占位结构，禁止用第三方图标库替代。
 6. 严禁"美化"设计稿（Figma 是唯一真理来源，像素级还原）。
 
-配套要求：Design Token（CSS 变量，禁止硬编码色值/字号/间距）、Figma 节点→HTML 语义标签映射、精确测量（px 默认，小数取舍规则）、a11y 最小约束、与 ElementUI 共存策略（Figma 优先 + 最小覆盖）。
+配套要求：Design Token（CSS 变量，**全局 `tokens.css` 定义一次、组件只引用，禁止硬编码、也禁止在组件内重复声明 `:root`/Token**——scoped 下 `:root` 会被改写为 `:root[data-v-xxx]` 而失效；**新增共用样式先查项目/同模块既有 tokens 与工具类（复用优先，见 2.6），并以 Token lint（2.7：TOKEN-01/02/03/04）自动校验**）、Figma 节点→HTML 语义标签映射、精确测量（px 默认，小数取舍规则）、a11y 最小约束、与 ElementUI 共存策略（Figma 优先 + 最小覆盖）。
 完成须过**第十章 QA Checklist**（布局/颜色/字体/资源/内容/交互/可访问性/代码质量）。
 
 ### 5.2 原型 → PRD（`prototype-to-openspec-prd.md`）
