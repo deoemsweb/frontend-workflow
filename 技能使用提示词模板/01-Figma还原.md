@@ -17,6 +17,7 @@
 - 输出目录：{{output_dir}}
 
 【执行要求】
+0. 数据获取（figma-design-constraint.md「〇、Figma 设计稿数据获取」）：**优先用 Figma MCP**（`get_figma_data` 读布局/视觉属性/组件结构、`download_figma_images` 导出资源）；MCP 不可用时再请我提供链接+节点 key / 截图 / 口述，仍缺关键视觉信息则停止询问，不脑补。
 1. 先解读意图（SKILL.md 2.1）：确认任务范围、起止阶段、技术栈，输出意图清单给我确认。
 2. 严格遵循 figma-design-constraint.md 六条核心规则：
    - 样式与 Figma 完全一致（颜色 / 尺寸 / 位置 / 间距 / 边框 / 圆角）；
@@ -38,7 +39,7 @@
 ## 模板 B：精简版（一行触发）
 
 ```text
-用 frontend-workflow skill 按 figma-design-constraint.md 把 {{figma_url}} 还原成 {{tech_stack}} 静态页面，写到 {{output_dir}}。严格六条核心规则（禁止美化 / 补缺失状态 / 第三方图标替代），用 Design Token，过第十章 QA Checklist，完成后等我验收。
+用 frontend-workflow skill 按 figma-design-constraint.md 把 {{figma_url}} 还原成 {{tech_stack}} 静态页面，写到 {{output_dir}}。优先用 Figma MCP（get_figma_data / download_figma_images）读取设计数据；严格六条核心规则（禁止美化 / 补缺失状态 / 第三方图标替代），用 Design Token，过第十章 QA Checklist，完成后等我验收。
 ```
 
 ## 占位符说明
