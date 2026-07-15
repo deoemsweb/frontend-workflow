@@ -19,6 +19,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 - **Figma→PRD 类**：从 Figma 生成 PRD / Figma 转 OpenSpec / 生成需求规格 / 写 OpenSpec 提案 / 需求拆解为 specs 与 tasks
 - **原型文档→PRD 类**：根据 `.md` 格式原型需求文档 / PRD 草稿生成 OpenSpec 规范 / 把 .md 需求文档规范化为 OpenSpec / 需求拆解为 specs 与 tasks
 - **工程规范类**：编写/重构前端代码、集成 API、状态管理、前端安全、性能优化、代码注释、AI 不确定时处理
+- **接口定义生成类**：根据 Swagger / open.json / swagger.json 生成接口定义、接口文档转前端 API 方法、OpenAPI 转 TypeScript interface / JSDoc 类型、接口文档增量同步
 - **测试类**：写单元测试 / 组件测试 / E2E / 视觉回归（见 `references/testing.md`，待扩展）
 - **端到端类**：从 Figma 生成完整页面（含业务逻辑）、按前端工作流开发、端到端还原设计稿并实现业务绑定
 
@@ -54,6 +55,8 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | ⑤ 生成 PRD | `references/prototype-to-openspec-prd.md` | 原型（Figma / .md）+ Swagger JSON | OpenSpec specs / proposal / tasks |
 | ⑥ 检查 | `references/prototype-to-openspec-prd.md`（第八章清单） | PRD 文档 | 偏差报告 |
 | ⑦ 确认 | 人工 | PRD | 需求确认 |
+| ⑦b 接口定义生成 | `references/api-definition-generation.md` | Swagger open.json + 项目既有接口模式 | 接口定义文件（函数+类型+JSDoc） |
+| ⑦c 确认 | 人工 | 接口定义 + delta 说明 | 接口验收 |
 | ⑧ 设计桥梁 | `references/frontend-engineering-standards.md` | PRD tasks.md | 组件树 / 状态 / 数据流草案 |
 | ⑨ 生成业务逻辑 | `references/frontend-engineering-standards.md` | 设计草案 + 静态页面 | 业务逻辑代码 |
 | ⑩ 检查 | `references/frontend-engineering-standards.md`（工程硬约束 + 非功能质量） | 业务逻辑代码 | 偏差报告 |
@@ -78,7 +81,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 **回流次数上限**：每个检查阶段最多回流 3 次；第 3 次仍未通过则标记「人工介入」，停止自动循环。
 
-**人工 Gate 提示**：到达确认环节（④⑦⑪⑫）必须暂停并提示用户：
+**人工 Gate 提示**：到达确认环节（④⑦⑦c⑪⑫）必须暂停并提示用户：
 
 ```
 【人工 Gate · 阶段 X】
@@ -98,12 +101,14 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | 代码片段 + 文件路径 + 行号 | 检查报告锚点 |
 | 上一轮检查报告 | 避免重复偏差、追踪修复进度 |
 | 技术栈判断结果 | 贯穿所有生成阶段 |
+| Swagger open.json 路径 / URL | 接口定义生成阶段的输入源 |
+| 项目接口模式画像 | 接口定义生成的命名/注释/归类依据，贯穿该阶段 |
 | PRD capability / change-id | 业务逻辑阶段回溯需求 |
 
 ### 2.5 边界与约束
 
 - **不内联规则正文**：本文件只路由与编排；视觉 / 工程 / PRD 的专业判断由对应 `references/*.md` 负责，使用前先 `Read`。
-- **不跳过人工 Gate**：④⑦⑪⑫ 必须人工确认，即使检查报告通过。
+- **不跳过人工 Gate**：④⑦⑦c⑪⑫ 必须人工确认，即使检查报告通过。
 - **不自行扩展阶段**：阶段顺序固定，跳过须在意图解读阶段确认。
 - **安全规则为硬约束**：`references/frontend-engineering-standards.md` 第四章（XSS / 输入校验 / 敏感信息）无论设计稿是否体现均须遵守。
 
@@ -119,7 +124,9 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
   - 输入源判定（Figma 或 .md）/ Figma 读取 / .md 原型文档读取与结构映射 / 需求分析要素 / OpenSpec 环境检查 / 文档结构写法 / PRD 生成 / 变更更新 / 拆解策略 / 质量校验清单 / 协作关系 / 边界与不确定处理
 - **3.3 前端工程通用规范** → `references/frontend-engineering-standards.md`
   - 类型安全 / API 集成 / 状态管理 / 安全约束 / 性能优化 / 注释文档 / AI 不确定时处理协议
-- **3.4 测试能力（待扩展）** → `references/testing.md`
+- **3.4 Swagger → 接口定义生成** → `references/api-definition-generation.md`
+  - Swagger 解析 / 项目既有模式自动探测 / 模式画像确认 / 生成规则（命名/注释/类型/模块归类）/ 多技术栈适配 / 增量更新与冲突处理 / 鉴权与拦截器 / 质量校验清单 / 边界与不确定处理 / 协作关系
+- **3.5 测试能力（待扩展）** → `references/testing.md`
   - 单元 / 组件 / E2E / 视觉回归 骨架占位，正式规则待补充
 
-> 关系：3.2 是上游 PRD 产出（specs/tasks）；3.1 与 3.3 是下游实现（视觉还原 + 工程规范），二者共享同一 Figma 数据源但产物不同、互不重叠。
+> 关系：3.2 是上游 PRD 产出（specs/tasks）；3.4（接口定义生成）是 PRD 与实现之间的「接口契约接入」桥梁，依据 Swagger 生成接口函数/类型供下游调用；3.1 与 3.3 是下游实现（视觉还原 + 工程规范）。各分支共享同一 Figma / Swagger 数据源但产物不同、互不重叠。

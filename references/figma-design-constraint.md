@@ -241,7 +241,8 @@ Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码�
 
 - 新增「工具类 / mixin」时，提示先检索项目 / 同模块是否已有等价实现；已有则引用。由检查 Agent 在偏差报告中以「复用建议」形式给出。
 
-**LINT-FIGMA-UI-01（error）｜手写 `<table>` 应改用项目 UI 库表格组件**
+**LINT-FIGMA-UI-01（error）｜手写** **`<table>`** **应改用项目 UI 库表格组件**
+
 - 前置条件：`package.json` 检测到任意 UI 库（见 8.4.1：`element-ui` / `element-plus` / `antd` / `@mui/material` / `ng-zorro-antd` / `uview-ui`）。无 UI 库时不触发。
 - 检测（ripgrep，强信号）：还原产物（`*.vue` / `*.tsx` / `*.jsx`）模板中出现手写 `<table` / `<thead` / `<tbody` / `<tr` / `<td` 结构（排除已包裹在库组件内的场景）。
   `rg -n -P '<(table|thead|tbody|tr|td|th)\b' --glob '*.vue' --glob '*.tsx' --glob '*.jsx' src/`
@@ -249,6 +250,7 @@ Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码�
 - 修复：改用 `el-table` / `a-table` / `<Table>` 等；保留 Figma 列结构与 Token 对齐。
 
 **LINT-FIGMA-UI-02（warn）｜裸表单 / 按钮原生标签应优先改用 UI 库组件**
+
 - 前置条件：同 UI-01（已识别到项目 UI 库）。
 - 检测（ripgrep 初筛）：模板中出现裸 `button` / `input` / `textarea` / `select` 原生标签。
   `rg -n -P '<(button|input|textarea|select)\b' --glob '*.vue' --glob '*.tsx' --glob '*.jsx' src/`
@@ -256,6 +258,7 @@ Design Token 是将设计稿中的视觉属性抽象为命名变量，在代码�
 - 适配：React 项目同时排查 JSX 中 `<button>` / `<input>` 手写；小程序项目（原生组件）不触发本规则。
 
 **LINT-FIGMA-UI-03（error）｜跨栈组件混用**
+
 - 检测：在 Vue 项目中出现 `a-` / `Mui` 前缀组件，或在 React 项目中出现 `el-` 前缀组件（与 8.4.1 识别到的栈冲突）。
   `rg -n -P '<(a-|el-|nz-|uni-|u-)[A-Za-z]' --glob '*.vue' --glob '*.tsx' --glob '*.jsx' src/`
 - 修复：只保留本栈对应库组件（见 8.4.3 表）。

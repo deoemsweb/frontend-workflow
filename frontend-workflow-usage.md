@@ -21,7 +21,8 @@ frontend-workflow-skills/
     ├── figma-design-constraint.md   # ① Figma 像素级还原约束
     ├── prototype-to-openspec-prd.md     # ② 原型（Figma / .md）→ OpenSpec PRD
     ├── frontend-engineering-standards.md  # ③ 前端工程通用规范
-    └── testing.md                   # ④ 测试能力（占位，待扩展）
+    ├── api-definition-generation.md # ④ Swagger/OpenAPI → 前端接口定义自动生成
+    └── testing.md                   # ⑤ 测试能力（占位，待扩展）
 ```
 
 ## 二、能力分支与触发场景
@@ -33,6 +34,7 @@ frontend-workflow-skills/
 | Figma 还原 | "按前端工作流还原这个 Figma"、"设计稿转代码"、"高保真还原"、"切图" | `figma-design-constraint.md` | 静态页面/组件代码 |
 | 原型 → PRD | "根据 Figma 生成 PRD"、"Figma 转 OpenSpec"、"根据 .md 需求文档生成 PRD"、"把 .md 需求文档规范化为 OpenSpec"、"需求拆解为 specs/tasks" | `prototype-to-openspec-prd.md` | OpenSpec 规范文档 |
 | 工程规范 | "按前端工程规范实现"、"集成 API"、"状态管理"、"前端安全/性能" | `frontend-engineering-standards.md` | 业务代码 |
+| 接口定义生成 | "根据 Swagger 生成接口定义"、"open.json 转 API"、"接口文档转前端方法"、"增量同步接口" | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） |
 | 测试（待扩展） | "写单测/组件测试/E2E" | `testing.md` | 暂为骨架，未定稿 |
 
 > 也可在不经过路由的情况下，直接要求"读取 references/xxx.md 的某个章节"单独使用。
@@ -43,12 +45,13 @@ frontend-workflow-skills/
 
 ② 生成静态页面  → ③ 检查(Agent只读) → ④ **人工验收**【Gate】
 → ⑤ 生成 OpenSpec PRD → ⑥ 检查 → ⑦ **人工确认需求**【Gate】
+→ ⑦b 接口定义生成(Swagger→函数/类型) → ⑦c **人工验收接口**【Gate】
 → ⑧ 设计桥梁(组件树/状态/数据流) → ⑨ 生成业务逻辑 → ⑩ 检查 → ⑪ **人工验收业务**【Gate】
 → ⑫ **终验**【Gate】
 
 关键协作机制：
 - **检查 Agent 只读不写**，输出结构化偏差报告，单环节最多回流 **3 次**，超出转"人工介入"。
-- **人工 Gate（④⑦⑪⑫）不可跳过**：即使检查通过，也必须暂停请用户确认。
+- **人工 Gate（④⑦⑦c⑪⑫）不可跳过**：即使检查通过，也必须暂停请用户确认。
 - **可跳过阶段**：如已有静态页面则可跳过 ②③，但须在"意图解读"阶段与用户确认并记录。
 
 偏差报告格式（强制）：
@@ -122,7 +125,14 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - **性能**：图片 `loading="lazy"` + 明确尺寸；路由/组件懒加载；搜索输入防抖、滚动节流；长列表(>100)考虑虚拟滚动（检查项目中是否已有 `el-table-virtual-scroll`、`vue-virt-list`等组件）。
 - **注释**：工具函数/Hook/Store action 必须有 JSDoc；复杂逻辑必须注释；TODO/FIXME 需带责任人+日期。
 
-### 5.4 测试（`testing.md`）
+### 5.4 接口定义生成（`api-definition-generation.md`）
+- **触发**：提供 Swagger / open.json / swagger.json，要求生成或增量同步前端接口定义。
+- **自动探测项目模式**：生成前先 Read `src/utils/http/http.js`（导出 `get/post/del/axiosRequest`）+ 既有 `src/utils/http/modules/<Business>/` 文件，提取命名约定（`getUserList`）、注释风格（JSDoc `@param`/`@returns`/`@typedef`）、模块归类方式、响应解包层级、鉴权拦截器，输出「模式画像」给你确认后才生成。
+- **生成规则**：复用 `http.js` 封装（禁止裸调 axios）；按 Swagger `tags`/path 归类到 `modules/<Business>/`；复杂类型用 `@typedef` 定义（本项目为 JS，无 TS interface）；schema `$ref` 解析为类型名。
+- **增量更新**：Swagger 改动后只追加/修改对应函数，不整文件覆盖；Swagger 已移除的接口不自动删，标注「⚠️ 待确认」。
+- **严禁猜测**：Swagger 缺出参 schema、响应解包层级不明、命名冲突时**停止询问**，不臆造返回结构。
+
+### 5.5 测试（`testing.md`）
 当前为**骨架占位，规则未定稿**。触发测试需求时，Skill 会先读取本文件但提示"待扩展"，需人工补充具体规范后再执行。
 
 ## 六、生成后检查清单（合并 Skill + 本项目规范）
@@ -134,6 +144,7 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - [ ] 富文本用 `v-rich-text` 而非 `v-html`
 - [ ] 无 inline style，动态样式用 `:class` + CSS class
 - [ ] API 走 `src/utils/http/http.js` 封装，新接口按业务模块归类且有出入参注释
+- [ ] 接口定义由 Swagger 生成时，模式画像已经确认、复用了既有封装与命名约定、无裸调 axios
 - [ ] 未硬编码敏感信息 / API Key
 - [ ] 异步组件处理了 loading/error/empty
 - [ ] 关键函数有 JSDoc 注释；无 ESLint 错误
@@ -143,4 +154,4 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 
 - 信息不足（接口契约未知、字段含义歧义、缺失关键状态设计、技术方案有分歧）时 **必须停止并询问用户，严禁猜测**。
 - 不确定项在文档中用 `> ⚠️ 待确认：...` 显式标记，确认后移除。
-- 不跳过人工 Gate（④⑦⑪⑫）；不自行扩展阶段顺序；安全规则为硬约束。
+- 不跳过人工 Gate（④⑦⑦c⑪⑫）；不自行扩展阶段顺序；安全规则为硬约束。

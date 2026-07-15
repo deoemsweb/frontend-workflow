@@ -1,4 +1,4 @@
-# 提示词模板：用 frontend-workflow skill 将 .md 原型文档 → OpenSpec PRD
+# 提示词模板 03：.md 原型需求文档 → OpenSpec 需求规范（PRD）
 
 > 用途：把产品/AI 产出的 Markdown 原型需求文档，借助本 skill 转换为结构化、可追溯的 OpenSpec 规范（specs / proposal / design / tasks）。
 > 规则依据：`references/prototype-to-openspec-prd.md`（第二章 2.3 节 `.md` 输入源处理、第七章拆解、第八章质检、第十章边界）。
