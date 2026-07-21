@@ -11,7 +11,7 @@
 | ② 生成静态页 | `figma-restorer` | figma-design-constraint.md | ④ |
 | ③ 检查 | `qa-reviewer`（只读） | 各阶段对应 reference 的 QA 清单 | — |
 | ⑤a⑤ 业务文档 | `prd-analyst` | prototype-to-openspec-prd.md 或 fw-dev-spec.md | ⑤a（内嵌）、⑦ |
-| ⑦b 接口定义 | `api-contractor` | api-definition-generation.md | ⑦c |
+| ⑦b⑦c 接口定义+验收 | `api-contractor` | api-definition-generation.md | ⑦b⑦c |
 | ⑧a⑧⑨ 业务实现 | `frontend-implementer` | frontend-engineering-standards.md | ⑧a（内嵌）、⑪ |
 | ⑩ 检查 / ⑫ 终验 | `qa-reviewer` / 编排器 | — | ⑫ |
 
@@ -39,7 +39,7 @@
 3. 按阶段表循环推进，每个生成阶段后 spawn `qa-reviewer`（只读）跑偏差报告（`.codebuddy/plans/<任务名>-review-*.md`），回流最多 3 次，超限转人工：
    - ② spawn `figma-restorer`（注入 figma-design-constraint.md + 横切安全硬约束）；④ 等我验收（staticConfirmed）。
    - ⑤a 先问我用 OpenSpec 还是 fw-dev-spec（内嵌 Gate）；⑤ spawn `prd-analyst`（注入对应 reference）；⑦ 等我确认需求（docConfirmed）。
-   - ⑦b（提供 Swagger 时）spawn `api-contractor`（注入 api-definition-generation.md）；⑦c 等我验收接口（apiConfirmed）。
+   - ⑦b⑦c（提供 Swagger 时）spawn `api-contractor`（注入 api-definition-generation.md）；⑦b⑦c 内嵌 Gate 等我验收接口（apiConfirmed）。
    - ⑧a 第〇章前置编排（自动探测根目录 → 确认业务文档来源 → 校验页面/路由就绪，缺页面问我走 01 还原还是按文档直生成，内嵌 Gate）；⑧ 设计桥梁 → ⑨ spawn `frontend-implementer`（注入 frontend-engineering-standards.md + 横切安全硬约束）；⑩ qa-reviewer 检查；⑪ 等我验收业务（bizConfirmed）。
    - ⑫ 终验：汇总交付，等我最终确认。
 4. 每阶段用 `validate-fw-phase-gate.cjs` 校验前置，人工 Gate 对应 gateChecks 置 true 后 `advance-fw-phase.cjs` 推进；脚本返回 nextAgent 指示下一步 spawn 角色。
@@ -50,7 +50,7 @@
 ## 模板 B：精简版（一行触发，多 Agent）
 
 ```text
-用多 agent / 团队协作模式（frontend-workflow 编排器 workflow-orchestrator 按 ②~⑫ 调度 figma-restorer / prd-analyst / api-contractor / frontend-implementer，qa-reviewer 只读检查），把 {{figma_url or md_path}} 交付成含业务的 {{tech_stack}} 代码写到 {{project_dir}}。先在 ⑤a 问我用 OpenSpec 还是 fw-dev-spec 活文档；每阶段生成后 qa-reviewer 检查；⑧ 前走第〇章确认业务文档来源与页面就绪（缺页面问我走 01 还原还是按文档直生成）；到 ④⑤a⑦⑦c⑧a⑪⑫ 人工 Gate 等我确认；若提供 Swagger 则在 ⑦ 后自动生成接口定义；安全硬约束全程生效，别猜接口和字段。
+用多 agent / 团队协作模式（frontend-workflow 编排器 workflow-orchestrator 按 ②~⑫ 调度 figma-restorer / prd-analyst / api-contractor / frontend-implementer，qa-reviewer 只读检查），把 {{figma_url or md_path}} 交付成含业务的 {{tech_stack}} 代码写到 {{project_dir}}。先在 ⑤a 问我用 OpenSpec 还是 fw-dev-spec 活文档；每阶段生成后 qa-reviewer 检查；⑧ 前走第〇章确认业务文档来源与页面就绪（缺页面问我走 01 还原还是按文档直生成）；到 ④⑤a⑦b⑦c⑧a⑪⑫ 人工 Gate 等我确认；若提供 Swagger 则在 ⑦ 后自动生成接口定义；安全硬约束全程生效，别猜接口和字段。
 ```
 
 ## 占位符说明
@@ -66,4 +66,4 @@
 
 ## 与单 agent 模板（../单Agent模式/08-端到端全流程.md）的区别
 - 单 agent：主 agent 自己逐阶段顺序执行全部生成 + 检查 + Gate。
-- 本模板：编排器不做生成类编码，按阶段表 dispatch 给 4 个专职 agent + qa-reviewer 只读检查，④⑤a⑦⑦c⑧a⑪⑫ Gate 由状态机脚本强制，职责隔离与中断恢复更强。规则正文与各 reference 完全一致。
+- 本模板：编排器不做生成类编码，按阶段表 dispatch 给 4 个专职 agent + qa-reviewer 只读检查，④⑤a⑦b⑦c⑧a⑪⑫ Gate 由状态机脚本强制，职责隔离与中断恢复更强。规则正文与各 reference 完全一致。

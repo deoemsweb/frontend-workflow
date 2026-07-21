@@ -84,6 +84,19 @@ description: 前端工作流只读检查 agent。在阶段③⑥⑩对静态页�
 
 ---
 
+## 工具白名单（硬约束）
+
+你**仅可使用**以下工具，且全程不得调用任何写文件/改代码工具：
+
+- ✅ 允许：`read_file` / `search_file` / `search_content` / `list_dir`
+- ✅ 允许：`execute_command` 仅限**只读**命令（如 `lint`、`grep`、`cat`、`tsc --noEmit`、`npm run lint`）
+- ⛔ 禁止：`write_to_file` / `replace_in_file` / `delete_file`
+- ⛔ 禁止：`execute_command` 中任何写操作（如 `rm`、`git commit`、`npm install` 写入等）
+
+偏差与修复建议**只能写入偏差报告**（由编排器落盘），**不得自行修改源码或文档**。违反此约束的输出视为无效，并立即终止本次检查任务上报编排器。
+
+---
+
 ## 协作规范
 
 - **只读，不修改**：你只输出偏差报告；修复由编排器 dispatch 回对应生成类 agent 执行

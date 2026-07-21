@@ -21,7 +21,7 @@
 | [02-Figma原型转OpenSpec-PRD-多Agent.md](./02-Figma原型转OpenSpec-PRD-多Agent.md) | Figma 原型 → OpenSpec PRD（⑤） | `prd-analyst` | 可选 |
 | [03-MD原型文档转OpenSpec-PRD-多Agent.md](./03-MD原型文档转OpenSpec-PRD-多Agent.md) | .md 原型 → OpenSpec PRD（⑤） | `prd-analyst` | 可选 |
 | [04-开发计划活文档-多Agent.md](./04-开发计划活文档-多Agent.md) | 原型 → 开发计划活文档（⑤ / 3.7） | `prd-analyst` | 可选 |
-| [05-Swagger接口定义生成-多Agent.md](./05-Swagger接口定义生成-多Agent.md) | Swagger → 前端接口定义（⑦b） | `api-contractor` | 可选 |
+| [05-Swagger接口定义生成-多Agent.md](./05-Swagger接口定义生成-多Agent.md) | Swagger → 前端接口定义（⑦b⑦c） | `api-contractor` | 可选 |
 | [06-业务文档接入与前端工程实现-多Agent.md](./06-业务文档接入与前端工程实现-多Agent.md) | 业务文档接入 + 工程实现（⑧a⑧⑨） | `frontend-implementer` | 可选 |
 | [07-测试能力（待扩展）-多Agent.md](./07-测试能力（待扩展）-多Agent.md) | 测试（独立分支 3.5） | `test-engineer`（占位，规范未定稿） | 占位 |
 | [08-端到端全流程-多Agent.md](./08-端到端全流程-多Agent.md) | 原型 → 交付 全链路（②~⑫） | 编排器按阶段调度全部角色 | 启用（默认多 agent） |
@@ -39,7 +39,7 @@
 
 1. 选定场景文件，替换 `{{...}}` 占位符。
 2. 复制 **模板 A** 或 **模板 B** 粘贴到对话；主 agent 会自动进入编排器角色，按 `references/multi-agent-orchestration.md` 调度。
-3. 各人工 Gate（④⑤a⑦⑦c⑧a⑪⑫ 或 TAPD 两处）会暂停等你确认；敏感操作（git / npm / TAPD 写操作等）会先询问。
+3. 各人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫ 或 TAPD 两处）会暂停等你确认；敏感操作（git / npm / TAPD 写操作等）会先询问。
 4. 状态机脚本在 `.codebuddy/plans/<任务名>-fw-state.json` 记录进度，支持中断恢复。
 
 > 若只要单 agent 顺序执行，请回到../单Agent模式/ 目录使用对应的 `01~09` 单 agent 模板。

@@ -64,6 +64,9 @@ if (!state) {
   // 2. 目标 phase 的前置标志产物（校验 target-1 及更早的产物，确保进入 target 前链路完整）
   //    这里校验"进入 target 之前必须已产出"的项：即检查 target 之前的产物类 phase
   for (let p = 0; p < targetPhase; p++) {
+    // 跳过被显式标记为 skipped 的前置 phase（如 --start 场景下的跳过阶段），
+    // 其产物/人工验收本就无需产出，不应误阻断推进
+    if (state.phases?.[getPhaseKey(p)]?.status === 'skipped') continue
     const r = checkPhaseArtifact(taskName, p, state)
     if (!r.pass) {
       blockers.push(`phase ${p}（${getPhaseDisplay(p)} ${getPhaseName(p)}）产物未就绪: ${r.description}` + (r.detail ? ` → ${r.detail}` : ''))

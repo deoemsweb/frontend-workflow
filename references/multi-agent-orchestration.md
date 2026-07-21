@@ -25,10 +25,10 @@
 
 | Agent 文件 | 角色 | 覆盖阶段 | 核心 reference | 产物 | 读写权限约定 |
 |-----------|------|---------|----------------|------|-------------|
-| `workflow-orchestrator.md` | 编排器 | 全部（调度）+ 人工 Gate ④⑤a⑦⑦c⑧a⑪⑫ | 本文件 + SKILL.md | 意图清单、状态推进、Gate 记录 | 不亲自写生成类代码；可写状态文件 |
+| `workflow-orchestrator.md` | 编排器 | 全部（调度）+ 人工 Gate ④⑤a⑦b⑦c⑧a⑪⑫ | 本文件 + SKILL.md | 意图清单、状态推进、Gate 记录 | 不亲自写生成类代码；可写状态文件 |
 | `figma-restorer.md` | Figma 还原 | ② | `figma-design-constraint.md` + `frontend-engineering-standards.md` | 静态页面代码 + tokens.css | 可写页面/样式代码 |
 | `prd-analyst.md` | 需求分析/PRD | ⑤a⑤ | `prototype-to-openspec-prd.md` 或 `fw-dev-spec.md` | OpenSpec specs/proposal/tasks 或 `fw_dev_spec/` 活文档 | 可写文档目录 |
-| `api-contractor.md` | 接口契约 | ⑦b | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） | 可写接口定义文件 |
+| `api-contractor.md` | 接口契约 | ⑦b⑦c | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） | 可写接口定义文件 |
 | `frontend-implementer.md` | 工程实现 | ⑧a⑧⑨ | `frontend-engineering-standards.md`（第〇章+全文） | 业务逻辑代码 | 可写业务代码 |
 | `qa-reviewer.md` | 只读检查 | ③⑥⑩ | 按阶段对应 reference 的 QA/质量清单/工程硬约束 | 结构化偏差报告 | **只读，不写任何代码/文档** |
 | `tapd-bugfixer.md` | TAPD 修复 | 独立分支 3.6 | `tapd-bugfix-workflow.md` + `tapd-tool-params.md` + `tapd-grouping-rules.md` + `tapd-plan-template.md` | 修复代码 + 评论 + 状态更新 | 可写修复代码/活文档；TAPD 写操作前须询问 |
@@ -40,7 +40,7 @@
 
 ## 三、阶段 ↔ Agent ↔ Reference ↔ 产物 映射
 
-状态机内部用顺序整数 phase（0~11）存储，展示层保留 ②~⑫ 原编号（含 ⑤a/⑦b/⑦c/⑧a 子阶段）。双向映射集中在 `scripts/workflow-state-utils.cjs`，避免散落不一致。
+状态机内部用顺序整数 phase（0~10）存储，展示层保留 ②~⑫ 原编号（含 ⑤a/⑦b⑦c/⑧a 子阶段）。⑦b（接口定义生成）与 ⑦c（接口人工验收）已合并为单一内部 phase 6，以 `gateChecks.apiConfirmed` 把关。双向映射集中在 `scripts/workflow-state-utils.cjs`，避免散落不一致。
 
 | 内部 phase | 展示编号 | 名称 | 负责 Agent | 标志产物（门控校验） | 是否人工 Gate |
 |:---:|---|---|---|---|:---:|
@@ -50,12 +50,11 @@
 | 3 | ⑤a⑤ | 业务文档方案确认+生成 | prd-analyst | `openspec/` 或 `fw_dev_spec/` 目录 | ⑤a 内嵌 |
 | 4 | ⑥ | 检查 | qa-reviewer | 偏差报告文件 `<name>-review-prd.md` | |
 | 5 | ⑦ | 人工 Gate | orchestrator | `gateChecks.docConfirmed=true` | ✅ |
-| 6 | ⑦b | 接口定义生成 | api-contractor | 接口定义文件 | |
-| 7 | ⑦c | 人工 Gate | orchestrator | `gateChecks.apiConfirmed=true` | ✅ |
-| 8 | ⑧a⑧⑨ | 前置编排+设计桥梁+业务逻辑 | frontend-implementer | 业务代码（不强制文件校验） | ⑧a 内嵌 |
-| 9 | ⑩ | 检查 | qa-reviewer | 偏差报告文件 `<name>-review-impl.md` | |
-| 10 | ⑪ | 人工 Gate | orchestrator | `gateChecks.bizConfirmed=true` | ✅ |
-| 11 | ⑫ | 终验 | orchestrator | 交付 | ✅ |
+| 6 | ⑦b⑦c | 接口定义生成+人工验收 | api-contractor | 接口定义文件 + `gateChecks.apiConfirmed=true` | ✅ |
+| 7 | ⑧a⑧⑨ | 前置编排+设计桥梁+业务逻辑 | frontend-implementer | 业务代码（不强制文件校验） | ⑧a 内嵌 |
+| 8 | ⑩ | 检查 | qa-reviewer | 偏差报告文件 `<name>-review-impl.md` | |
+| 9 | ⑪ | 人工 Gate | orchestrator | `gateChecks.bizConfirmed=true` | ✅ |
+| 10 | ⑫ | 终验 | orchestrator | 交付 | ✅ |
 
 > **人工 Gate 内嵌说明**：⑤a（业务文档方案确认）与 ⑧a（第〇章前置编排）是 phase 内部的人工确认点，由对应 agent 在其 reference 流程内暂停询问，不单独占内部 phase。
 >
@@ -156,7 +155,19 @@
 - 完成后回报产物路径与关键上下文，供编排器推进状态机
 ```
 
----
+### 8.1 qa-reviewer 专用：只读工具白名单（硬约束）
+
+spawn **qa-reviewer** 时，上述模板的「约束」块**替换为**以下只读白名单（与 `.agents/qa-reviewer.md` 的「工具白名单」小节一致），不得注入任何写工具权限：
+
+```
+## 约束（只读，硬约束）
+你仅可使用以下工具，且全程不得调用任何写文件/改代码工具：
+- 允许：read_file / search_file / search_content / list_dir
+- 允许：execute_command 仅限只读命令（如 lint、grep、cat、tsc --noEmit、npm run lint）
+- 禁止：write_to_file / replace_in_file / delete_file
+- 禁止：execute_command 中任何写操作（如 rm、git commit、npm install 写入等）
+偏差与修复建议只能写入偏差报告（由编排器落盘），不得自行修改源码。
+```
 
 ## 九、状态机使用说明
 
@@ -192,11 +203,24 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 
 ### 9.4 人工 Gate 置位
 
-人工 Gate（④⑤a⑦⑦c⑧a⑪⑫）由编排器在获得用户确认后，将对应 `gateChecks` 字段置为 `true` 并写回状态文件（可用脚本或直接 `write_to_file`），门控才会放行后续生成阶段——把"未经确认不得进入下一阶段"从提示词约定升级为脚本强制。
+人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫）由编排器在获得用户确认后，将对应 `gateChecks` 字段置为 `true` 并写回状态文件（可用脚本或直接 `write_to_file`），门控才会放行后续生成阶段——把"未经确认不得进入下一阶段"从提示词约定升级为脚本强制。
 
 ### 9.5 待确认项管理
 
 需求/方案中的模糊点写入状态文件 `pendingConfirmations[]`（`{ id, question, resolved, source }`）。`resolved=false` 存在时，门控阻断进入下一生成阶段，须用户逐项确认后由编排器置位。
+
+### 9.6 阶段回退（返工）
+
+当某阶段产物经人工/Gate 评审需"返工"时，编排器调用回退脚本将状态机后向流转，**已完成阶段的产物文件（偏差报告、OpenSpec 目录等）不做删除**，仅重置状态：
+
+```bash
+node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>
+```
+
+- 仅允许后向回退（`目标 phase < 当前 phase`），否则报错退出
+- 将 `[目标 phase, TOTAL_PHASES)` 区间内所有 phase 重置为 `pending`（清除 `startedAt/completedAt`），目标 phase 置 `running`
+- 输出 `{ success, fromPhase, toPhase, nextAgent, ... }`；编排器据 `nextAgent` 重新 spawn 对应角色
+- 回退后再次推进前，`validate-fw-phase-gate.cjs` 仍会对 `pending/running` 前置 phase 正常拦截
 
 ---
 
@@ -228,7 +252,7 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 
 ## 十二、边界与不变量
 
-1. **编排器不亲自写生成类代码**：②⑤⑦b⑧⑨ 的生成工作必须 dispatch 给对应 agent；编排器只做调度、Gate、状态推进。
-2. **人工 Gate 不可跳过**：④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认，即使 qa-reviewer 报告通过。
+1. **编排器不亲自写生成类代码**：②⑤⑦b⑦c⑧⑨ 的生成工作必须 dispatch 给对应 agent；编排器只做调度、Gate、状态推进。
+2. **人工 Gate 不可跳过**：④⑤a⑦b⑦c⑧a⑪⑫ 必须人工确认，即使 qa-reviewer 报告通过。
 3. **reference 规则正文不内联**：agent 文件只做指针引用，执行前必须 `Read` 对应 reference；本协议与各 reference 冲突时，**以各 reference 的领域规则为准**，本协议只管编排。
 4. **两种模式并存**：用户可绕过编排直接 `Read` 单个 reference 使用，多 agent 模式不是唯一入口。

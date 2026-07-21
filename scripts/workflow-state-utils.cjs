@@ -6,8 +6,9 @@
  * 被 create-fw-workflow / validate-fw-phase-gate / advance-fw-phase 三个脚本复用。
  *
  * 阶段编号约定：
- *   - 状态机内部用顺序整数 phase（0~11）存储；
- *   - 展示层用 ②~⑫ 原编号（含 ⑤a/⑦b/⑦c/⑧a 子阶段）；
+ *   - 状态机内部用顺序整数 phase（0~10）存储；
+ *   - 展示层用 ②~⑫ 原编号（含 ⑤a/⑦b⑦c/⑧a 子阶段）；
+ *   - ⑦b（接口定义生成）与 ⑦c（接口人工验收）已合并为单一内部 phase 6；
  *   - 双向映射集中在本模块，避免散落不一致。
  *
  * @module workflow-state-utils
@@ -27,8 +28,10 @@ const PLANS_DIR = path.join(PROJECT_ROOT, '.codebuddy', 'plans')
 // ─── Phase 定义 ─────────────────────────────────────────────────
 
 /**
- * 内部 phase（0~11）→ slug
+ * 内部 phase（0~10）→ slug
  * 对应编排协议 §三 的映射表
+ * 注：⑦b（接口定义生成）与 ⑦c（接口人工验收）已合并为单一 phase 6，
+ *    以 gate 型 apiConfirmed 作为校验项，与 ⑤a⑤ 的合并策略一致。
  */
 const PHASE_SLUGS = [
   'gen_static',    // 0  = ② 生成静态页面
@@ -37,17 +40,16 @@ const PHASE_SLUGS = [
   'gen_prd',       // 3  = ⑤a⑤ 业务文档生成
   'review_prd',    // 4  = ⑥ 检查
   'gate_prd',      // 5  = ⑦ 人工 Gate
-  'gen_api',       // 6  = ⑦b 接口定义生成
-  'gate_api',      // 7  = ⑦c 人工 Gate
-  'implement',     // 8  = ⑧a⑧⑨ 前置编排+设计桥梁+业务逻辑
-  'review_impl',   // 9  = ⑩ 检查
-  'gate_impl',     // 10 = ⑪ 人工 Gate
-  'final'          // 11 = ⑫ 终验
+  'gen_api',       // 6  = ⑦b⑦c 接口定义生成+人工验收（合并）
+  'implement',     // 7  = ⑧a⑧⑨ 前置编排+设计桥梁+业务逻辑
+  'review_impl',   // 8  = ⑩ 检查
+  'gate_impl',     // 9  = ⑪ 人工 Gate
+  'final'          // 10 = ⑫ 终验
 ]
 
 /** 内部 phase → 展示编号 */
 const PHASE_DISPLAY = [
-  '②', '③', '④', '⑤a⑤', '⑥', '⑦', '⑦b', '⑦c', '⑧a⑧⑨', '⑩', '⑪', '⑫'
+  '②', '③', '④', '⑤a⑤', '⑥', '⑦', '⑦b⑦c', '⑧a⑧⑨', '⑩', '⑪', '⑫'
 ]
 
 /** 内部 phase → 中文名称 */
@@ -58,8 +60,7 @@ const PHASE_NAMES = [
   '业务文档生成',
   '业务文档检查',
   '业务文档人工确认',
-  '接口定义生成',
-  '接口人工验收',
+  '接口定义生成+验收',
   '业务逻辑实现',
   '业务逻辑检查',
   '业务人工验收',
@@ -77,12 +78,11 @@ const PHASE_AGENTS = [
   'prd-analyst',           // 3
   'qa-reviewer',           // 4
   'workflow-orchestrator', // 5  (人工 Gate)
-  'api-contractor',        // 6
-  'workflow-orchestrator', // 7  (人工 Gate)
-  'frontend-implementer',  // 8
-  'qa-reviewer',           // 9
-  'workflow-orchestrator', // 10 (人工 Gate)
-  'workflow-orchestrator'  // 11 (终验)
+  'api-contractor',        // 6  (生成 + 内嵌 ⑦c 人工验收)
+  'frontend-implementer',  // 7
+  'qa-reviewer',           // 8
+  'workflow-orchestrator', // 9  (人工 Gate)
+  'workflow-orchestrator'  // 10 (终验)
 ]
 
 /**
@@ -99,12 +99,11 @@ const PHASE_ARTIFACTS = {
   3: { type: 'dir', anyOf: ['openspec', 'fw_dev_spec'], description: '业务文档目录（openspec/ 或 fw_dev_spec/）' },
   4: { type: 'file', suffix: '-review-prd.md', description: '业务文档偏差报告' },
   5: { type: 'gate', gateKey: 'docConfirmed', description: '业务文档人工确认' },
-  6: { type: 'none', description: '接口定义文件（由接口人工验收把关）' },
-  7: { type: 'gate', gateKey: 'apiConfirmed', description: '接口人工验收' },
-  8: { type: 'none', description: '业务逻辑代码（不强制文件校验）' },
-  9: { type: 'file', suffix: '-review-impl.md', description: '业务逻辑偏差报告' },
-  10: { type: 'gate', gateKey: 'bizConfirmed', description: '业务人工验收' },
-  11: { type: 'none', description: '交付' }
+  6: { type: 'gate', gateKey: 'apiConfirmed', description: '接口定义生成并完成人工验收（⑦b⑦c 合并）' },
+  7: { type: 'none', description: '业务逻辑代码（不强制文件校验）' },
+  8: { type: 'file', suffix: '-review-impl.md', description: '业务逻辑偏差报告' },
+  9: { type: 'gate', gateKey: 'bizConfirmed', description: '业务人工验收' },
+  10: { type: 'none', description: '交付' }
 }
 
 // ─── 状态文件操作 ───────────────────────────────────────────────

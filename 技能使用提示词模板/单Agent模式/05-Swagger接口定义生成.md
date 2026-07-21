@@ -20,7 +20,7 @@
 【执行要求】
 1. 先解读意图（SKILL.md 2.1）：确认技术栈、生成范围、全量/增量模式，输出意图清单给我确认。
 2. Swagger 读取（第二章）：解析 paths / components/schemas / tags / security；解析失败或缺关键字段（responses/schema）则停止询问，不臆造返回结构。
-3. 项目模式探测（第三章）：Read 请求封装层 + 既有接口模块文件，提取命名约定 / 注释风格 / 模块归类 / 响应解包层级 / 鉴权拦截器，输出「模式画像」给我确认（人工 Gate ⑦c 前置确认）。
+3. 项目模式探测（第三章）：Read 请求封装层 + 既有接口模块文件，提取命名约定 / 注释风格 / 模块归类 / 响应解包层级 / 鉴权拦截器，输出「模式画像」给我确认（人工 Gate ⑦b⑦c 前置确认）。
 4. 生成规则（第四章）：
    - 复用项目封装层（本项目 http.js 的 get/post/del），禁止裸调 axios / fetch；
    - 按 Swagger tags / path 归类到对应业务模块目录；
@@ -29,7 +29,7 @@
    - 复杂类型用 @typedef（JS）或 interface（TS）统一定义，schema $ref 解析为类型名，无 $ref 残留。
 5. 增量更新（第五章，仅 mode=增量）：只追加/修改对应函数，不整文件覆盖；Swagger 已移除的接口不自动删，标注「⚠️ 待确认」；输出 delta 说明（新增/修改/移除）。
 6. 质量校验（第七章）：逐项过清单（封装复用 / 模块归类 / 命名一致 / 注释完整 / 类型准确 / 解包层级 / 无重复鉴权）。
-7. 完成后到人工 Gate（⑦c）暂停等我验收，不自动进入业务逻辑实现。
+7. 完成后到人工 Gate（⑦b⑦c）暂停等我验收，不自动进入业务逻辑实现。
 
 【硬约束】
 - 严禁猜测：Swagger 缺出参 schema、响应解包层级不明、命名冲突、鉴权方式与封装层不一致时，停止询问，不脑补。
@@ -68,4 +68,4 @@
 
 ## 多 Agent 模式（可选）
 
-在提示词开头追加「用多 agent / 团队协作模式」即可启用：编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）按阶段⑦b spawn 专职 agent **`api-contractor`**（`.agents/api-contractor.md`）生成前端接口定义，⑦c 接口验收 Gate 由编排器管理；状态机脚本（`scripts/`）负责门控校验与阶段推进，规则正文仍来自 `api-definition-generation.md`。不追加则默认单 agent 顺序执行。完整协议见 `references/multi-agent-orchestration.md`。
+在提示词开头追加「用多 agent / 团队协作模式」即可启用：编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）按阶段⑦b⑦c spawn 专职 agent **`api-contractor`**（`.agents/api-contractor.md`）生成前端接口定义，⑦b⑦c 接口验收 Gate 由编排器管理；状态机脚本（`scripts/`）负责门控校验与阶段推进，规则正文仍来自 `api-definition-generation.md`。不追加则默认单 agent 顺序执行。完整协议见 `references/multi-agent-orchestration.md`。

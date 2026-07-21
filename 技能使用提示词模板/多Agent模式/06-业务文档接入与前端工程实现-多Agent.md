@@ -14,7 +14,7 @@
 | 核心 reference | `frontend-engineering-standards.md`（第〇章 + 全文，含第四章安全硬约束） |
 | 检查 agent | `qa-reviewer`（只读）→ `.codebuddy/plans/<任务名>-review-impl.md` |
 | 人工 Gate | ⑧a 业务文档来源确认（内嵌）、⑪ 业务验收（bizConfirmed） |
-| 状态机 | `scripts/create-fw-workflow.cjs <任务名> --start 8` → `validate/advance-fw-phase.cjs` |
+| 状态机 | `scripts/create-fw-workflow.cjs <任务名> --start 7` → `validate/advance-fw-phase.cjs` |
 
 ## 模板 A：完整版（多 Agent 编排）
 
@@ -33,7 +33,7 @@
 
 【编排指令】
 1. 意图解读：确认页面 / 业务文档来源 / 技术栈 / 输出目录，输出意图清单让我确认。
-2. 调用 `node scripts/create-fw-workflow.cjs <任务名> --start 8` 初始化状态机（phase 8 = ⑧a⑧⑨）。
+2. 调用 `node scripts/create-fw-workflow.cjs <任务名> --start 7` 初始化状态机（phase 7 = ⑧a⑧⑨）。
 3. Gate ⑧a（第〇章前置编排，内嵌）：自动审阅项目根目录（只读）探测 openspec/、fw_dev_spec/、package.json、src/views；推荐并问我连接哪套业务文档（已有 OpenSpec / 已有 fw-dev-spec / 二者皆有二选一）；若都没有，按原型来源推荐先走 02/03/04 生成，完成后再回来；校验目标页面/路由是否就绪，缺页面且有 Figma 问我是否先走 01 还原，缺页面且无 Figma 问我是否按文档直生成。未经我确认不得继续。
 4. spawn `frontend-implementer`（.agents/frontend-implementer.md），dispatch 提示词须注入：
    - 必读：references/frontend-engineering-standards.md（第〇章 + 全文，含第四章安全硬约束）；
@@ -42,7 +42,7 @@
    - 完成后回报产物路径与关键上下文。
 5. frontend-implementer：先出组件树/状态/数据流草案经我确认（设计桥梁）；再按业务文档分步实现——OpenSpec 读 tasks.md 逐任务勾选、fw-dev-spec 读模块③分步 Plan 并按 ⬜→🔄→✅ 更新模块④进度总览（中断从首个 ⬜/🔄 续）；遵守 API 三态+防竞态、状态管理、第四章安全硬约束、性能与注释规范；信息不足停下问，严禁猜测业务规则/接口契约。
 6. 生成后 spawn `qa-reviewer`（只读）跑偏差报告到 `.codebuddy/plans/<任务名>-review-impl.md`，如需回流最多 3 次，超限转人工。
-7. 到达人工 Gate ⑪ 时暂停，待我确认业务后把 `gateChecks.bizConfirmed` 置 true 并 `advance-fw-phase.cjs <任务名> 10` 推进。
+7. 到达人工 Gate ⑪ 时暂停，待我确认业务后把 `gateChecks.bizConfirmed` 置 true 并 `advance-fw-phase.cjs <任务名> 9` 推进。
 ```
 
 ## 模板 B：精简版（一行触发，多 Agent）

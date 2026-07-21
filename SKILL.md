@@ -60,8 +60,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | ⑤ 生成业务文档 | `prd-analyst` | 按 ⑤a 选定：`references/prototype-to-openspec-prd.md`（OpenSpec）或 `references/fw-dev-spec.md`（活文档） | 原型（Figma / .md）+ Swagger JSON | OpenSpec specs / proposal / tasks，或 fw_dev_spec 活文档 |
 | ⑥ 检查 | `qa-reviewer`（只读） | 按 ⑤a 选定：`references/prototype-to-openspec-prd.md`（第八章清单）或 `references/fw-dev-spec.md`（质量校验清单） | 业务文档 | 偏差报告 |
 | ⑦ 确认 | 编排器（人工 Gate） | 人工 | 业务文档 | 需求确认 |
-| ⑦b 接口定义生成 | `api-contractor` | `references/api-definition-generation.md` | Swagger open.json + 项目既有接口模式 | 接口定义文件（函数+类型+JSDoc） |
-| ⑦c 确认 | 编排器（人工 Gate） | 人工 | 接口定义 + delta 说明 | 接口验收 |
+| ⑦b⑦c 接口定义生成+验收 | `api-contractor` | `references/api-definition-generation.md` | Swagger open.json + 项目既有接口模式 | 接口定义文件（函数+类型+JSDoc），验收后 `gateChecks.apiConfirmed=true` |
 | ⑧a 第〇章前置编排 | `frontend-implementer` | `references/frontend-engineering-standards.md`（第〇章） | 已确认业务文档 + 根目录探测 | 业务文档来源确认 + 页面/路由就绪结论 |
 | ⑧ 设计桥梁 | `frontend-implementer` | `references/frontend-engineering-standards.md`（经第〇章后） | 业务文档（OpenSpec tasks.md / fw-dev-spec 活文档） | 组件树 / 状态 / 数据流草案 |
 | ⑨ 生成业务逻辑 | `frontend-implementer` | `references/frontend-engineering-standards.md` | 设计草案 + 已就绪静态页面 | 业务逻辑代码 |
@@ -89,7 +88,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 6. **只读检查**：③⑥⑩ 由 `qa-reviewer` 执行，只读不写，产出结构化偏差报告；回流上限 3 次，超出转人工介入。
 7. **敏感操作**：git/删除/批量替换/TAPD 写操作/npm 脚本/部署等，任何 agent 执行前必须上报编排器，由编排器统一向用户询问（见编排协议 §六）。
 
-> 状态机内部用顺序整数 phase（0~11）存储，与展示编号 ②~⑫ 的双向映射集中在 `scripts/workflow-state-utils.cjs`。
+> 状态机内部用顺序整数 phase（0~10）存储，与展示编号 ②~⑫ 的双向映射集中在 `scripts/workflow-state-utils.cjs`（⑦b⑦c 已合并为单一 phase 6）。
 
 ### 2.3 第三件事：管理检查循环与人工确认点
 
@@ -107,7 +106,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 **回流次数上限**：每个检查阶段最多回流 3 次；第 3 次仍未通过则标记「人工介入」，停止自动循环。
 
-**人工 Gate 提示**：到达确认环节（④⑤a⑦⑦c⑧a⑪⑫）必须暂停并提示用户：
+**人工 Gate 提示**：到达确认环节（④⑤a⑦b⑦c⑧a⑪⑫）必须暂停并提示用户：
 
 ```
 【人工 Gate · 阶段 X】
@@ -139,7 +138,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 - **不跳过人工 Gate**：④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认，即使检查报告通过。
 - **不自行扩展阶段**：阶段顺序固定，跳过须在意图解读阶段确认。
 - **安全规则为硬约束**：`references/frontend-engineering-standards.md` 第四章（XSS / 输入校验 / 敏感信息）无论设计稿是否体现均须遵守。
-- **多 agent 模式下编排器不写生成类代码**：②⑤⑦b⑧⑨ 的生成工作必须 dispatch 给对应 `.agents/` 角色；编排器只做调度、Gate 与状态推进。
+- **多 agent 模式下编排器不写生成类代码**：②⑤⑦b⑦c⑧⑨ 的生成工作必须 dispatch 给对应 `.agents/` 角色；编排器只做调度、Gate 与状态推进。
 - **敏感操作统一询问**：多 agent 模式下，git/删除/批量替换/TAPD 写操作/npm 脚本/部署等敏感操作，由编排器统一向用户询问后执行（见 `references/multi-agent-orchestration.md` §六）。
 
 ---
@@ -167,6 +166,6 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
   - 统一输出五模块：当前项目说明 / 需求功能模块设计（含原需求原型关联锚点）/ 分步开发计划 / 整体进度记录 / 变更日志；单文档或多 spec 文档按需求大小询问用户
 - **3.8 多 agent 编排协议（编排层，可选模式）** → `references/multi-agent-orchestration.md`
   - 8 个 `.agents/` 角色清单与职责边界 / 阶段↔agent↔reference↔产物映射 / agent 间上下文传递 schema / 产出物命名约定 / 状态机脚本（create/validate/advance）使用说明 / 敏感操作统一询问清单 / dispatch 提示词模板 / 只读约束与回流上限
-  - 角色定义见 `.agents/`：`workflow-orchestrator`（编排器）、`figma-restorer`（②）、`prd-analyst`（⑤）、`api-contractor`（⑦b）、`frontend-implementer`（⑧⑨）、`qa-reviewer`（③⑥⑩只读）、`tapd-bugfixer`（3.6）、`test-engineer`（3.5 占位）
+  - 角色定义见 `.agents/`：`workflow-orchestrator`（编排器）、`figma-restorer`（②）、`prd-analyst`（⑤）、`api-contractor`（⑦b⑦c）、`frontend-implementer`（⑧⑨）、`qa-reviewer`（③⑥⑩只读）、`tapd-bugfixer`（3.6）、`test-engineer`（3.5 占位）
 
 > 关系：3.2 是上游 PRD 产出（specs/tasks）；3.4（接口定义生成）是 PRD 与实现之间的「接口契约接入」桥梁，依据 Swagger 生成接口函数/类型供下游调用；3.1 与 3.3 是下游实现（视觉还原 + 工程规范）；3.6（缺陷修复）是独立的「开发后维护」生命周期分支，不进入 ②~⑫ 主流程，但其前端代码修复步骤复用 3.3 工程规范（UI 类加 3.1），并借助 `.bugfix-workflow/` 活文档实现中断恢复。各分支共享同一 Figma / Swagger / TAPD 数据源但产物不同、互不重叠。

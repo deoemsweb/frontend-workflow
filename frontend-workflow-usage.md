@@ -23,7 +23,7 @@ frontend-workflow-skills/
 │   ├── workflow-orchestrator.md     # 编排器：调度 / 人工 Gate / 状态推进 / 敏感操作统一询问
 │   ├── figma-restorer.md            # Figma 还原（阶段②）
 │   ├── prd-analyst.md               # 需求分析/PRD（阶段⑤）
-│   ├── api-contractor.md            # 接口契约（阶段⑦b）
+│   ├── api-contractor.md            # 接口契约（阶段⑦b⑦c）
 │   ├── frontend-implementer.md      # 工程实现（阶段⑧⑨）
 │   ├── qa-reviewer.md               # 只读检查（阶段③⑥⑩）
 │   ├── tapd-bugfixer.md             # TAPD 缺陷修复（独立分支 3.6）
@@ -45,7 +45,8 @@ frontend-workflow-skills/
     ├── workflow-state-utils.cjs     # 多 agent 状态机公共工具
     ├── create-fw-workflow.cjs       # 初始化多 agent 工作流
     ├── validate-fw-phase-gate.cjs   # 阶段门控验证
-    └── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
+    ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
+    └── rollback-fw-phase.cjs        # 阶段回退（返工，仅后向）
 ```
 
 ## 二、能力分支与触发场景
@@ -63,19 +64,19 @@ frontend-workflow-skills/
 
 > 也可在不经过路由的情况下，直接要求"读取 references/xxx.md 的某个章节"单独使用。
 
-## 三、标准工作流（端到端 12 阶段）
+## 三、标准工作流（端到端全流程）
 
 当任务为"端到端还原设计稿并实现业务"时，Skill 按固定顺序推进：
 
 ② 生成静态页面  → ③ 检查(Agent只读) → ④ **人工验收**【Gate】
 → ⑤ 生成 OpenSpec PRD → ⑥ 检查 → ⑦ **人工确认需求**【Gate】
-→ ⑦b 接口定义生成(Swagger→函数/类型) → ⑦c **人工验收接口**【Gate】
+→ ⑦b⑦c 接口定义生成+人工验收(Swagger→函数/类型)【Gate】
 → ⑧ 设计桥梁(组件树/状态/数据流) → ⑨ 生成业务逻辑 → ⑩ 检查 → ⑪ **人工验收业务**【Gate】
 → ⑫ **终验**【Gate】
 
 关键协作机制：
 - **检查 Agent 只读不写**，输出结构化偏差报告，单环节最多回流 **3 次**，超出转"人工介入"。
-- **人工 Gate（④⑦⑦c⑪⑫）不可跳过**：即使检查通过，也必须暂停请用户确认。
+- **人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫）不可跳过**：即使检查通过，也必须暂停请用户确认。
 - **可跳过阶段**：如已有静态页面则可跳过 ②③，但须在"意图解读"阶段与用户确认并记录。
 
 偏差报告格式（强制）：
@@ -187,4 +188,4 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 
 - 信息不足（接口契约未知、字段含义歧义、缺失关键状态设计、技术方案有分歧）时 **必须停止并询问用户，严禁猜测**。
 - 不确定项在文档中用 `> ⚠️ 待确认：...` 显式标记，确认后移除。
-- 不跳过人工 Gate（④⑦⑦c⑪⑫）；不自行扩展阶段顺序；安全规则为硬约束。
+- 不跳过人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫）；不自行扩展阶段顺序；安全规则为硬约束。

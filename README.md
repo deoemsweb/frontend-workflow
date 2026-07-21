@@ -80,7 +80,7 @@ node scripts/validate-fw-phase-gate.cjs <任务名> <目标phase>               
 node scripts/advance-fw-phase.cjs <任务名> <目标phase>                           # 推进并返回 nextAgent
 ```
 
-**协作约定**：编排器不亲自写生成类代码；人工 Gate ④⑤a⑦⑦c⑧a⑪⑫ 由编排器统一持有、确认后写回 `gateChecks`；检查 agent 只读；回流上限 3 次；横切安全约束注入所有生成类 agent；敏感操作（git/删除/批量替换/TAPD 写操作/npm 脚本/部署）由编排器统一询问用户。
+**协作约定**：编排器不亲自写生成类代码；人工 Gate ④⑤a⑦b⑦c⑧a⑪⑫ 由编排器统一持有、确认后写回 `gateChecks`；检查 agent 只读；回流上限 3 次；横切安全约束注入所有生成类 agent；敏感操作（git/删除/批量替换/TAPD 写操作/npm 脚本/部署）由编排器统一询问用户。
 
 ## 前端开发工作流
 
@@ -95,8 +95,7 @@ Figma 设计稿
   ▼ ⑤ 生成 OpenSpec PRD                       · prototype-to-openspec-prd（+ Swagger 补齐 API）
   ▼ ⑥ 检查 Agent 跑第八章质量清单             【检查】最多 3 次回流
   ▼ ⑦ 人工确认需求                            【确认 Gate·人工】
-  ▼ ⑦b 接口定义生成  · api-definition-generation（Swagger→函数/类型/JSDoc，自动探测项目模式）
-  ▼ ⑦c 人工验收接口定义                        【确认 Gate·人工】
+  ▼ ⑦b⑦c 接口定义生成+人工验收  · api-definition-generation（Swagger→函数/类型/JSDoc，自动探测项目模式）【确认 Gate·人工】
   ▼ ⑧ 设计桥梁：组件树 / 状态 / 数据流草案     · frontend-engineering-standards
   ▼ ⑨ 生成业务逻辑并绑定静态页面              · frontend-engineering-standards
   ▼ ⑩ 检查 Agent 跑工程硬约束 + 非功能质量      【检查】最多 3 次回流
@@ -104,7 +103,7 @@ Figma 设计稿
   ▼ ⑫ 终验
 ```
 
-**协作约定**：检查 Agent 只读、不写代码；回流上限 3 次，超出转人工介入；上下文在生成/检查间共享（Figma 节点 ID、代码片段、Swagger 路径、接口模式画像、上一轮报告）；确认 Gate ④⑦⑦c⑪⑫ 必须人工确认。
+**协作约定**：检查 Agent 只读、不写代码；回流上限 3 次，超出转人工介入；上下文在生成/检查间共享（Figma 节点 ID、代码片段、Swagger 路径、接口模式画像、上一轮报告）；确认 Gate ④⑤a⑦b⑦c⑧a⑪⑫ 必须人工确认。
 
 ## 安装
 
