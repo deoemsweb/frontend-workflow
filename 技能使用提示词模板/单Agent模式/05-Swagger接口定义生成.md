@@ -1,4 +1,4 @@
-# 提示词模板 04：Swagger / OpenAPI → 前端接口定义自动生成
+# 提示词模板 05：Swagger / OpenAPI → 前端接口定义自动生成
 
 > 规则依据：`references/api-definition-generation.md`（Swagger 解析、项目模式自动探测、生成规则、增量更新、质量校验）。
 > 适用：根据 Swagger / open.json / swagger.json 生成或增量同步前端接口定义文件（函数 + 类型 + JSDoc）。
@@ -65,3 +65,7 @@
 - **首次接入**：项目无任何接口定义文件时，模板会跳过采样按封装层导出 + 通用最佳实践生成，模式画像标注「首次接入，无既有样本」。
 - **增量同步**：后端更新 Swagger 后用 `mode=增量更新`，skill 只改对应函数并输出 delta，不破坏手写扩展。
 - **同时有 Figma**：若同时给 Figma 设计稿，出参类型字段应与设计稿数据字段对齐，不一致时以 Swagger 契约为准并标注差异（见 reference 第九章协作关系）。
+
+## 多 Agent 模式（可选）
+
+在提示词开头追加「用多 agent / 团队协作模式」即可启用：编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）按阶段⑦b spawn 专职 agent **`api-contractor`**（`.agents/api-contractor.md`）生成前端接口定义，⑦c 接口验收 Gate 由编排器管理；状态机脚本（`scripts/`）负责门控校验与阶段推进，规则正文仍来自 `api-definition-generation.md`。不追加则默认单 agent 顺序执行。完整协议见 `references/multi-agent-orchestration.md`。

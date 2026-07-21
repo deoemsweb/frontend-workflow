@@ -50,3 +50,7 @@
 | `{{project_dir}}` | OpenSpec 写入的目标项目根目录 | `F:/Develop/www/userlive` |
 | `{{tech_stack}}` | 技术栈（仅作后续工程实现参考） | `Vue2.6 + JS + ElementUI2` |
 | `{{swagger_path}}` | 可选接口文档路径 | `docs/api.json` 或 `无` |
+
+## 多 Agent 模式（可选）
+
+在提示词开头追加「用多 agent / 团队协作模式」即可启用：编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）按阶段⑤ spawn 专职 agent **`prd-analyst`**（`.agents/prd-analyst.md`）生成 OpenSpec PRD（specs / proposal / design / tasks），⑤a 业务文档方案确认与 ⑦ 人工 Gate 由编排器管理；状态机脚本（`scripts/`）负责门控校验与阶段推进，规则正文仍来自 `prototype-to-openspec-prd.md`。不追加则默认单 agent 顺序执行。完整协议见 `references/multi-agent-orchestration.md`。

@@ -57,3 +57,7 @@
 | `{{backend_dev}}` | 后端处理人姓名（可选，用于@后端发评论） | `linweicheng` |
 | `{{product}}` | 产品经理姓名（可选，用于@产品发评论） | `李紫茵` |
 | `{{qa}}` | 测试人员姓名（可选，修复完成后@测试关注验证） | `张测试` |
+
+## 多 Agent 模式（独立分支启用）
+
+TAPD 缺陷修复是**独立生命周期分支**，默认即由专职 agent **`tapd-bugfixer`**（`.agents/tapd-bugfixer.md`）执行，编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）仅做入口路由，不进入 ②~⑫ 主流程状态机。如需显式多 agent 协作，在提示词开头追加「用多 agent / 团队协作模式」；缺陷筛选确认、验证后更新状态两处 Gate 仍须人工确认，TAPD 写操作（`update_bug` / `create_comments`）前须询问。完整协议见 `references/multi-agent-orchestration.md`（§十一 3.6）。

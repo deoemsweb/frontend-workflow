@@ -8,15 +8,26 @@
 `frontend-workflow` 是一个**单一入口**的前端开发工作流 Skill，把原本分散的 4 个子能力合并为一个目录（位于 `~/.codebuddy/skills/frontend-workflow-skills/`）。它自身**只做三件事**：
 
 1. **解读意图**：判断任务范围、技术栈、起止阶段。
-2. **按阶段调度**：命中分支后 `Read` 对应 `references/*.md` 再执行（规则正文不内联）。
+2. **按阶段调度**：命中分支后 `Read` 对应 `references/*.md` 再执行（规则正文不内联）；多 agent 模式下由编排器 spawn `.agents/` 专职角色执行。
 3. **管理检查循环与人工确认点**：每个生成阶段后跑结构化偏差报告，并在关键节点暂停等待人工验收。
+
+> **两种执行模式**：默认单 agent 顺序执行；用户明确要求"多 agent / 团队协作"或端到端全流程时，可启用多 agent 编排模式（见 `references/multi-agent-orchestration.md` 与 `.agents/` 角色目录）。
 
 目录结构：
 
 ```
 frontend-workflow-skills/
-├── SKILL.md                         # 路由层（触发条件 + 意图解读 + 阶段调度 + 章节指针）
+├── SKILL.md                         # 路由层/编排器（触发条件 + 意图解读 + 阶段调度 + 多 agent 编排 + 章节指针）
 ├── README.md                        # 能力索引与安装说明
+├── .agents/                         # 多 agent 角色定义（可选编排模式）
+│   ├── workflow-orchestrator.md     # 编排器：调度 / 人工 Gate / 状态推进 / 敏感操作统一询问
+│   ├── figma-restorer.md            # Figma 还原（阶段②）
+│   ├── prd-analyst.md               # 需求分析/PRD（阶段⑤）
+│   ├── api-contractor.md            # 接口契约（阶段⑦b）
+│   ├── frontend-implementer.md      # 工程实现（阶段⑧⑨）
+│   ├── qa-reviewer.md               # 只读检查（阶段③⑥⑩）
+│   ├── tapd-bugfixer.md             # TAPD 缺陷修复（独立分支 3.6）
+│   └── test-engineer.md             # 测试（独立分支 3.5，占位）
 └── references/
     ├── figma-design-constraint.md   # ① Figma 像素级还原约束
     ├── prototype-to-openspec-prd.md     # ② 原型（Figma / .md）→ OpenSpec PRD
@@ -24,11 +35,17 @@ frontend-workflow-skills/
     ├── api-definition-generation.md # ④ Swagger/OpenAPI → 前端接口定义自动生成
     ├── testing.md                   # ⑤ 测试能力（占位，待扩展）
     ├── tapd-bugfix-workflow.md      # ⑥ TAPD 缺陷修复 5 阶段核心流程（独立分支）
+    ├── multi-agent-orchestration.md # ⑦ 多 agent 编排协议（角色/映射/上下文/状态机/敏感操作）
+    ├── fw-dev-spec.md               # ⑧ 原型 → 开发计划活文档（独立分支 3.7）
     ├── tapd-tool-params.md          # TAPD MCP 工具参数速查
     ├── tapd-grouping-rules.md       # 缺陷分组判定规则
     └── tapd-plan-template.md        # 活文档修复计划模板
 └── scripts/
-    └── extract_workspace_id.py      # 从 TAPD 实体 ID 提取 workspace_id
+    ├── extract_workspace_id.py      # 从 TAPD 实体 ID 提取 workspace_id
+    ├── workflow-state-utils.cjs     # 多 agent 状态机公共工具
+    ├── create-fw-workflow.cjs       # 初始化多 agent 工作流
+    ├── validate-fw-phase-gate.cjs   # 阶段门控验证
+    └── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
 ```
 
 ## 二、能力分支与触发场景

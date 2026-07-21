@@ -59,3 +59,7 @@
 - 若文档较大，模板 A 的第 2 步“先确认需求清单再生成”能显著降低返工，建议保留。
 - 若 `.md` 本身已很规范（含字段表+流程步骤），可跳过确认直接生成，但在模板里注明“文档已自洽，可省略确认 Gate”。
 - 同时给 Figma 时，明确写“以 .md 文本为权威，Figma 仅补视觉/交互”，避免两套来源冲突时 skill 误判。
+
+## 多 Agent 模式（可选）
+
+在提示词开头追加「用多 agent / 团队协作模式」即可启用：编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）按阶段⑤ spawn 专职 agent **`prd-analyst`**（`.agents/prd-analyst.md`）把 .md 原型文档转为 OpenSpec PRD，⑤a 方案确认与 ⑦ 人工 Gate 由编排器管理；状态机脚本（`scripts/`）负责门控校验与阶段推进，规则正文仍来自 `prototype-to-openspec-prd.md`（2.3）。不追加则默认单 agent 顺序执行。完整协议见 `references/multi-agent-orchestration.md`。
