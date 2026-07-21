@@ -54,13 +54,15 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | ② 生成静态页面 | `references/figma-design-constraint.md` + `references/frontend-engineering-standards.md` | Figma 设计稿 | 静态页面代码 |
 | ③ 检查 | `references/figma-design-constraint.md`（第十章 QA Checklist） | 静态页面代码 | 偏差报告 |
 | ④ 确认 | 人工 | 偏差报告 + 页面 | 验收结论 |
-| ⑤ 生成 PRD | `references/prototype-to-openspec-prd.md` | 原型（Figma / .md）+ Swagger JSON | OpenSpec specs / proposal / tasks |
-| ⑥ 检查 | `references/prototype-to-openspec-prd.md`（第八章清单） | PRD 文档 | 偏差报告 |
-| ⑦ 确认 | 人工 | PRD | 需求确认 |
+| ⑤a 业务文档方案确认 | 人工 | 原型来源 + 项目环境 | 选定 OpenSpec（02/03）或 fw-dev-spec 活文档（04） |
+| ⑤ 生成业务文档 | 按 ⑤a 选定：`references/prototype-to-openspec-prd.md`（OpenSpec）或 `references/fw-dev-spec.md`（活文档） | 原型（Figma / .md）+ Swagger JSON | OpenSpec specs / proposal / tasks，或 fw_dev_spec 活文档 |
+| ⑥ 检查 | 按 ⑤a 选定：`references/prototype-to-openspec-prd.md`（第八章清单）或 `references/fw-dev-spec.md`（质量校验清单） | 业务文档 | 偏差报告 |
+| ⑦ 确认 | 人工 | 业务文档 | 需求确认 |
 | ⑦b 接口定义生成 | `references/api-definition-generation.md` | Swagger open.json + 项目既有接口模式 | 接口定义文件（函数+类型+JSDoc） |
 | ⑦c 确认 | 人工 | 接口定义 + delta 说明 | 接口验收 |
-| ⑧ 设计桥梁 | `references/frontend-engineering-standards.md` | PRD tasks.md | 组件树 / 状态 / 数据流草案 |
-| ⑨ 生成业务逻辑 | `references/frontend-engineering-standards.md` | 设计草案 + 静态页面 | 业务逻辑代码 |
+| ⑧a 第〇章前置编排 | `references/frontend-engineering-standards.md`（第〇章） | 已确认业务文档 + 根目录探测 | 业务文档来源确认 + 页面/路由就绪结论 |
+| ⑧ 设计桥梁 | `references/frontend-engineering-standards.md`（经第〇章后） | 业务文档（OpenSpec tasks.md / fw-dev-spec 活文档） | 组件树 / 状态 / 数据流草案 |
+| ⑨ 生成业务逻辑 | `references/frontend-engineering-standards.md` | 设计草案 + 已就绪静态页面 | 业务逻辑代码 |
 | ⑩ 检查 | `references/frontend-engineering-standards.md`（工程硬约束 + 非功能质量） | 业务逻辑代码 | 偏差报告 |
 | ⑪ 确认 | 人工 | 业务代码 | 业务验收 |
 | ⑫ 终验 | 人工 | 全部产物 | 交付 |
@@ -71,7 +73,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 部分能力是独立的生命周期（如 **3.6 TAPD 缺陷修复**、**3.7 开发计划活文档**），与「设计稿→PRD→实现」主流程无顺序耦合。命中此类分支时**不套用上表 ②~⑫**，而是直接 `Read` 对应 reference 按其内部阶段执行：
 - **3.6 TAPD 缺陷修复**：`Read` `references/tapd-bugfix-workflow.md`；内部「前端代码修复」步骤复用 3.3 工程规范（UI 类加 3.1 视觉约束）；自带人工 Gate（缺陷筛选确认、验证后更新状态）。
-- **3.7 开发计划活文档**：`Read` `references/fw-dev-spec.md`；是 3.2 OpenSpec PRD 的**可切换替代**，把 Figma / `.md` 原型转为项目根 `fw_dev_spec/<需求名-日期>/` 下的分层活文档（原型放子目录根、活文档放 `specs/`），供 ⑧⑨ 实现使用，不写 OpenSpec 文件；自带人工 Gate（Figma→.md 原型审阅、目录新建确认、组织形式单文档/多文档选择）。
+- **3.7 开发计划活文档**：`Read` `references/fw-dev-spec.md`；是 3.2 OpenSpec PRD 的**可切换替代**，把 Figma / `.md` 原型转为项目根 `fw_dev_spec/<需求名-日期>/` 下的分层活文档（原型放子目录根、活文档放 `specs/`），不写 OpenSpec 文件；产出的活文档经 3.3 第〇章（业务文档接入与前置编排）被探测并确认为 ⑧⑨ 的需求依据；自带人工 Gate（Figma→.md 原型审阅、目录新建确认、组织形式单文档/多文档选择）。
 
 ### 2.3 第三件事：管理检查循环与人工确认点
 
@@ -89,7 +91,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 **回流次数上限**：每个检查阶段最多回流 3 次；第 3 次仍未通过则标记「人工介入」，停止自动循环。
 
-**人工 Gate 提示**：到达确认环节（④⑦⑦c⑪⑫）必须暂停并提示用户：
+**人工 Gate 提示**：到达确认环节（④⑤a⑦⑦c⑧a⑪⑫）必须暂停并提示用户：
 
 ```
 【人工 Gate · 阶段 X】
@@ -112,12 +114,13 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | Swagger open.json 路径 / URL | 接口定义生成阶段的输入源 |
 | 项目接口模式画像 | 接口定义生成的命名/注释/归类依据，贯穿该阶段 |
 | PRD capability / change-id | 业务逻辑阶段回溯需求 |
+| 业务文档方案选择结果 | 第〇章确认的需求依据（OpenSpec / fw-dev-spec / 跳过），贯穿⑧⑨⑩ |
 | TAPD 需求 ID / workspace_id | 缺陷修复分支（3.6）定位 TAPD 实体、复用 `.bugfix-workflow/` 活文档计划 |
 
 ### 2.5 边界与约束
 
 - **不内联规则正文**：本文件只路由与编排；视觉 / 工程 / PRD 的专业判断由对应 `references/*.md` 负责，使用前先 `Read`。
-- **不跳过人工 Gate**：④⑦⑦c⑪⑫ 必须人工确认，即使检查报告通过。
+- **不跳过人工 Gate**：④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认，即使检查报告通过。
 - **不自行扩展阶段**：阶段顺序固定，跳过须在意图解读阶段确认。
 - **安全规则为硬约束**：`references/frontend-engineering-standards.md` 第四章（XSS / 输入校验 / 敏感信息）无论设计稿是否体现均须遵守。
 
@@ -132,7 +135,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 - **3.2 原型（Figma / .md）→ OpenSpec PRD** → `references/prototype-to-openspec-prd.md`
   - 输入源判定（Figma 或 .md）/ Figma 读取 / .md 原型文档读取与结构映射 / 需求分析要素 / OpenSpec 环境检查 / 文档结构写法 / PRD 生成 / 变更更新 / 拆解策略 / 质量校验清单 / 协作关系 / 边界与不确定处理
 - **3.3 前端工程通用规范** → `references/frontend-engineering-standards.md`
-  - 类型安全 / API 集成 / 状态管理 / 安全约束 / 性能优化 / 注释文档 / AI 不确定时处理协议
+  - 第〇章 业务文档接入与前置编排（根目录标准探测 / 业务文档方案推荐与询问 / 无文档转交 02/03/04 / 页面路由校验 / 衔接⑧⑨⑩）→ 类型安全 / API 集成 / 状态管理 / 安全约束 / 性能优化 / 注释文档 / AI 不确定时处理协议
 - **3.4 Swagger → 接口定义生成** → `references/api-definition-generation.md`
   - Swagger 解析 / 项目既有模式自动探测 / 模式画像确认 / 生成规则（命名/注释/类型/模块归类）/ 多技术栈适配 / 增量更新与冲突处理 / 鉴权与拦截器 / 质量校验清单 / 边界与不确定处理 / 协作关系
 - **3.5 测试能力（待扩展）** → `references/testing.md`

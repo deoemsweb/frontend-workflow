@@ -39,7 +39,7 @@ frontend-workflow-skills/
 |------|---------------|----------------|------|
 | Figma 还原 | "按前端工作流还原这个 Figma"、"设计稿转代码"、"高保真还原"、"切图" | `figma-design-constraint.md` | 静态页面/组件代码 |
 | 原型 → PRD | "根据 Figma 生成 PRD"、"Figma 转 OpenSpec"、"根据 .md 需求文档生成 PRD"、"把 .md 需求文档规范化为 OpenSpec"、"需求拆解为 specs/tasks" | `prototype-to-openspec-prd.md` | OpenSpec 规范文档 |
-| 工程规范 | "按前端工程规范实现"、"集成 API"、"状态管理"、"前端安全/性能" | `frontend-engineering-standards.md` | 业务代码 |
+| 工程规范 | "按前端工程规范实现"、"接入业务文档开发"、"连接 OpenSpec / fw-dev-spec 实现"、"集成 API"、"状态管理"、"前端安全/性能" | `frontend-engineering-standards.md`（先经第〇章接入业务文档与页面校验） | 业务代码 |
 | 接口定义生成 | "根据 Swagger 生成接口定义"、"open.json 转 API"、"接口文档转前端方法"、"增量同步接口" | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） |
 | 测试（待扩展） | "写单测/组件测试/E2E" | `testing.md` | 暂为骨架，未定稿 |
 | 缺陷修复（独立分支） | "修复 bug"、"缺陷修复"、"tapd bugfix"、"需求关联缺陷"、"批量修 bug" | `tapd-bugfix-workflow.md` | 修复后代码 + TAPD 评论/状态更新 + 活文档计划 |
