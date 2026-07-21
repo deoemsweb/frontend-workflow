@@ -10,9 +10,16 @@ frontend-workflow-skills/            # 单一 skill 目录（= 安装单元）
 ├── references/                      # 领域规则正文（按需 Read，非自动注入）
 │   ├── figma-design-constraint.md   # Figma 像素级还原约束
 │   ├── prototype-to-openspec-prd.md # 原型（Figma / .md）→ OpenSpec PRD
+│   ├── fw-dev-spec.md               # 原型（Figma / .md）→ 开发计划活文档（OpenSpec 替代，独立分支 3.7）
 │   ├── frontend-engineering-standards.md  # 前端工程通用规范
 │   ├── api-definition-generation.md # Swagger/OpenAPI → 前端接口定义自动生成
-│   └── testing.md                   # 测试能力（占位，待扩展）
+│   ├── testing.md                   # 测试能力（占位，待扩展）
+│   ├── tapd-bugfix-workflow.md      # TAPD 缺陷修复 5 阶段核心流程（独立分支）
+│   ├── tapd-tool-params.md          # TAPD MCP 工具参数速查
+│   ├── tapd-grouping-rules.md       # 缺陷分组判定规则
+│   └── tapd-plan-template.md        # 活文档修复计划模板
+├── scripts/                         # 辅助脚本
+│   └── extract_workspace_id.py      # 从 TAPD 实体 ID 提取 workspace_id
 └── README.md                        # 本文件
 ```
 
@@ -25,6 +32,8 @@ frontend-workflow-skills/            # 单一 skill 目录（= 安装单元）
 | 工程规范 | `references/frontend-engineering-standards.md` | 类型安全、API 集成、状态管理、安全约束、性能优化、注释文档、AI 不确定时处理 |
 | 接口定义生成 | `references/api-definition-generation.md` | Swagger/open.json → 前端接口定义（函数+类型+JSDoc），自动探测项目既有接口模式并按其风格生成 |
 | 测试（待扩展） | `references/testing.md` | 单元 / 组件 / E2E / 视觉回归 骨架占位 |
+| 缺陷修复（独立分支） | `references/tapd-bugfix-workflow.md` | TAPD 缺陷修复全流程：提取 workspace_id → 读筛选缺陷 → 生成活文档计划 → 执行修复/发评论 → 验证后更新状态；前端代码修复复用工程规范 |
+| 开发计划活文档（独立分支，3.2 替代） | `references/fw-dev-spec.md` | 原型（Figma / .md）→ 本地分层活文档（fw_dev_spec/<需求名-日期>/）：Figma 先转 .md 原型审阅后存、五模块统一规范、单/多文档询问；替代 OpenSpec PRD 供 ⑧⑨ 使用，复用活文档进度约定 |
 
 > 各 `references/*.md` 仍可独立 `Read` 使用，不经过 `SKILL.md` 路由。
 

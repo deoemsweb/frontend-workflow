@@ -1,6 +1,6 @@
 ---
 name: frontend-workflow
-description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级还原、Figma 原型转 OpenSpec PRD、前端工程通用规范（类型安全/API/状态/安全/性能）、以及测试能力（待扩展）。当用户要求 Figma 还原、设计稿转代码、高保真还原、切图、Figma→OpenSpec PRD、生成需求文档、前端工程规范、类型/API/状态/安全、端到端还原设计稿并实现业务、按前端工作流开发、写单测/组件测试/E2E 时使用此 skill。
+description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级还原、Figma 原型转 OpenSpec PRD、前端工程通用规范（类型安全/API/状态/安全/性能）、测试能力（待扩展）、TAPD 缺陷修复全流程，以及开发计划活文档（fw_dev_spec）生成。当用户要求 Figma 还原、设计稿转代码、高保真还原、切图、Figma→OpenSpec PRD、生成需求文档、前端工程规范、类型/API/状态/安全、端到端还原设计稿并实现业务、按前端工作流开发、写单测/组件测试/E2E、TAPD 缺陷修复、修复 bug、缺陷修复、tapd bugfix、需求关联缺陷、批量修 bug、开发计划活文档、fw_dev_spec、dev spec、原型转开发计划、原型转活文档、需求开发计划 时使用此 skill。
 ---
 
 # 前端开发工作流（统一 Skill）
@@ -21,6 +21,8 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 - **工程规范类**：编写/重构前端代码、集成 API、状态管理、前端安全、性能优化、代码注释、AI 不确定时处理
 - **接口定义生成类**：根据 Swagger / open.json / swagger.json 生成接口定义、接口文档转前端 API 方法、OpenAPI 转 TypeScript interface / JSDoc 类型、接口文档增量同步
 - **测试类**：写单元测试 / 组件测试 / E2E / 视觉回归（见 `references/testing.md`，待扩展）
+- **缺陷修复类**：TAPD 缺陷修复 / 修复 bug / 缺陷修复 / tapd bugfix / 需求关联缺陷 / 批量修 bug（独立分支，见 `references/tapd-bugfix-workflow.md`，不进入下列 12 阶段主流程）
+- **开发计划活文档类**：开发计划活文档 / fw_dev_spec / dev spec / 原型转开发计划 / 原型转活文档 / 需求开发计划（独立分支，见 `references/fw-dev-spec.md`；是「原型→OpenSpec PRD」的可切换替代方案，产出本地活文档供 ⑧⑨ 实现使用，不写 OpenSpec 文件）
 - **端到端类**：从 Figma 生成完整页面（含业务逻辑）、按前端工作流开发、端到端还原设计稿并实现业务绑定
 
 > 子领域规则**不内联**在本文件，命中分支后**必须 `Read` 对应 `references/*.md`** 再执行，本文件只做路由与上下文编排。
@@ -65,6 +67,12 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 > 阶段顺序固定；如需跳过某阶段（如已有静态页面），须在意图解读阶段与用户确认后记录。各 reference 仍可独立读取使用（不经过本路由）。
 
+### 2.2b 独立分支（不进入 12 阶段主流程）
+
+部分能力是独立的生命周期（如 **3.6 TAPD 缺陷修复**、**3.7 开发计划活文档**），与「设计稿→PRD→实现」主流程无顺序耦合。命中此类分支时**不套用上表 ②~⑫**，而是直接 `Read` 对应 reference 按其内部阶段执行：
+- **3.6 TAPD 缺陷修复**：`Read` `references/tapd-bugfix-workflow.md`；内部「前端代码修复」步骤复用 3.3 工程规范（UI 类加 3.1 视觉约束）；自带人工 Gate（缺陷筛选确认、验证后更新状态）。
+- **3.7 开发计划活文档**：`Read` `references/fw-dev-spec.md`；是 3.2 OpenSpec PRD 的**可切换替代**，把 Figma / `.md` 原型转为项目根 `fw_dev_spec/<需求名-日期>/` 下的分层活文档（原型放子目录根、活文档放 `specs/`），供 ⑧⑨ 实现使用，不写 OpenSpec 文件；自带人工 Gate（Figma→.md 原型审阅、目录新建确认、组织形式单文档/多文档选择）。
+
 ### 2.3 第三件事：管理检查循环与人工确认点
 
 **检查报告格式（强制结构化）**：
@@ -104,6 +112,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | Swagger open.json 路径 / URL | 接口定义生成阶段的输入源 |
 | 项目接口模式画像 | 接口定义生成的命名/注释/归类依据，贯穿该阶段 |
 | PRD capability / change-id | 业务逻辑阶段回溯需求 |
+| TAPD 需求 ID / workspace_id | 缺陷修复分支（3.6）定位 TAPD 实体、复用 `.bugfix-workflow/` 活文档计划 |
 
 ### 2.5 边界与约束
 
@@ -128,5 +137,12 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
   - Swagger 解析 / 项目既有模式自动探测 / 模式画像确认 / 生成规则（命名/注释/类型/模块归类）/ 多技术栈适配 / 增量更新与冲突处理 / 鉴权与拦截器 / 质量校验清单 / 边界与不确定处理 / 协作关系
 - **3.5 测试能力（待扩展）** → `references/testing.md`
   - 单元 / 组件 / E2E / 视觉回归 骨架占位，正式规则待补充
+- **3.6 TAPD 缺陷修复（独立分支）** → `references/tapd-bugfix-workflow.md`
+  - 5 阶段：提取 workspace_id（`scripts/extract_workspace_id.py`）/ 读取筛选缺陷（`references/tapd-tool-params.md`）/ 生成活文档计划（`references/tapd-plan-template.md` + `references/tapd-grouping-rules.md`）/ 执行修复与发评论 / 验证后更新状态
+  - 4.1 前端代码修复复用 `references/frontend-engineering-standards.md`（UI 类 Bug 加 `references/figma-design-constraint.md`），继承安全硬约束与工程规范
+- **3.7 开发计划活文档（独立分支，3.2 OpenSpec 的可切换替代）** → `references/fw-dev-spec.md`
+  - 输入读取与需求分析交叉引用 `references/prototype-to-openspec-prd.md`（2.2/2.3/2.4/第十章）；Figma 输入先转为 `.md` 原型经审阅 Gate 后存放
+  - 目录：`fw_dev_spec/<需求名>-<YYYY-MM-DD>/`（原型放根、活文档放 `specs/`），复用 `references/tapd-plan-template.md` 的 `⬜/🔄/✅/⏭` 活文档进度约定
+  - 统一输出五模块：当前项目说明 / 需求功能模块设计（含原需求原型关联锚点）/ 分步开发计划 / 整体进度记录 / 变更日志；单文档或多 spec 文档按需求大小询问用户
 
-> 关系：3.2 是上游 PRD 产出（specs/tasks）；3.4（接口定义生成）是 PRD 与实现之间的「接口契约接入」桥梁，依据 Swagger 生成接口函数/类型供下游调用；3.1 与 3.3 是下游实现（视觉还原 + 工程规范）。各分支共享同一 Figma / Swagger 数据源但产物不同、互不重叠。
+> 关系：3.2 是上游 PRD 产出（specs/tasks）；3.4（接口定义生成）是 PRD 与实现之间的「接口契约接入」桥梁，依据 Swagger 生成接口函数/类型供下游调用；3.1 与 3.3 是下游实现（视觉还原 + 工程规范）；3.6（缺陷修复）是独立的「开发后维护」生命周期分支，不进入 ②~⑫ 主流程，但其前端代码修复步骤复用 3.3 工程规范（UI 类加 3.1），并借助 `.bugfix-workflow/` 活文档实现中断恢复。各分支共享同一 Figma / Swagger / TAPD 数据源但产物不同、互不重叠。

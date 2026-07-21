@@ -22,7 +22,13 @@ frontend-workflow-skills/
     ├── prototype-to-openspec-prd.md     # ② 原型（Figma / .md）→ OpenSpec PRD
     ├── frontend-engineering-standards.md  # ③ 前端工程通用规范
     ├── api-definition-generation.md # ④ Swagger/OpenAPI → 前端接口定义自动生成
-    └── testing.md                   # ⑤ 测试能力（占位，待扩展）
+    ├── testing.md                   # ⑤ 测试能力（占位，待扩展）
+    ├── tapd-bugfix-workflow.md      # ⑥ TAPD 缺陷修复 5 阶段核心流程（独立分支）
+    ├── tapd-tool-params.md          # TAPD MCP 工具参数速查
+    ├── tapd-grouping-rules.md       # 缺陷分组判定规则
+    └── tapd-plan-template.md        # 活文档修复计划模板
+└── scripts/
+    └── extract_workspace_id.py      # 从 TAPD 实体 ID 提取 workspace_id
 ```
 
 ## 二、能力分支与触发场景
@@ -36,6 +42,7 @@ frontend-workflow-skills/
 | 工程规范 | "按前端工程规范实现"、"集成 API"、"状态管理"、"前端安全/性能" | `frontend-engineering-standards.md` | 业务代码 |
 | 接口定义生成 | "根据 Swagger 生成接口定义"、"open.json 转 API"、"接口文档转前端方法"、"增量同步接口" | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） |
 | 测试（待扩展） | "写单测/组件测试/E2E" | `testing.md` | 暂为骨架，未定稿 |
+| 缺陷修复（独立分支） | "修复 bug"、"缺陷修复"、"tapd bugfix"、"需求关联缺陷"、"批量修 bug" | `tapd-bugfix-workflow.md` | 修复后代码 + TAPD 评论/状态更新 + 活文档计划 |
 
 > 也可在不经过路由的情况下，直接要求"读取 references/xxx.md 的某个章节"单独使用。
 
@@ -134,6 +141,15 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 
 ### 5.5 测试（`testing.md`）
 当前为**骨架占位，规则未定稿**。触发测试需求时，Skill 会先读取本文件但提示"待扩展"，需人工补充具体规范后再执行。
+
+### 5.6 TAPD 缺陷修复（`tapd-bugfix-workflow.md`，独立分支）
+
+- **触发**：提供 TAPD 需求 ID + 前端开发人员姓名（后端/产品/测试人员可选），或说"修复 bug / 缺陷修复 / tapd bugfix / 需求关联缺陷 / 批量修 bug"。
+- **5 阶段**：①提取 `workspace_id`（`scripts/extract_workspace_id.py`，从需求 ID 自动解析）→ ②读取并筛选关联缺陷（按状态+处理人过滤，向用户确认）→ ③按责任方分组（A 前端 / B 后端 / C 需求，规则见 `references/tapd-grouping-rules.md`）并生成活文档计划（`.bugfix-workflow/bugfix-plan-YYYY-MM-DD.md`，模板见 `references/tapd-plan-template.md`）→ ④执行（A 改代码 / B·C·D 发 TAPD 评论 @相关人员）→ ⑤用户验证通过后更新 Bug 状态为"已解决"。
+- **前端代码修复复用工程规范**：4.1 改代码前先 `Read references/frontend-engineering-standards.md`（UI 类 Bug 加 `Read references/figma-design-constraint.md`），**禁止 `v-html`、用户输入须转义、禁止硬编码敏感信息** 等安全硬约束无论缺陷描述是否体现均须遵守；修复后跑 lint/type-check。
+- **TAPD MCP 工具**：统一 `mcp__tapd__` 前缀，参数 schema 见 `tapd-tool-params.md`。
+- **活文档机制**：阶段间用 `⬜/🔄/✅/⏭` 状态标记，中断后可从 `.bugfix-workflow/` 计划文档恢复进度。
+- **人工 Gate**：缺陷筛选结果须确认；验证通过后才更新状态，修复阶段不自动改状态。
 
 ## 六、生成后检查清单（合并 Skill + 本项目规范）
 
