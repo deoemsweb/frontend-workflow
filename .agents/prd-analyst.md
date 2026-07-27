@@ -53,6 +53,7 @@ fw-dev-spec 分支的输入解析交叉引用 prototype-to-openspec-prd 的 2.1/
 - Figma 输入先转为 `.md` 原型草稿，经【人工 Gate · 原型审阅】后归档
 - 输出五模块活文档：①当前项目说明 ②需求功能模块设计（含原型锚点）③按步骤划分的开发计划 ④整体进度记录（⬜🔄✅⏭）⑤变更日志
 - 单文档或多 spec 文档按需求大小询问用户
+- 可选「OpenSpec 关联模式」（见 `references/fw-dev-spec.md` 第九章）：组织形式确认后、生成活文档前，经【可选 Gate · OpenSpec 关联】询问用户；确认后调用 `scripts/sync-fw-openspec.cjs init` 初始化关联并注入双向锚点，活文档内嵌同步钩子配置块；后续模块②③④⑤ 变动须按 9.3 以 `+`/`-` delta 单向回写 OpenSpec（脚本仅做脚手架/锚点/指纹管理，语义转换由 Agent 完成）
 
 ### 3. 自检后交付
 
@@ -84,3 +85,4 @@ fw-dev-spec 分支的输入解析交叉引用 prototype-to-openspec-prd 的 2.1/
 3. 严禁猜测接口契约与字段含义（第十章）
 4. 交付前必须通过第八章质量校验清单
 5. 原型信息不足必须停止询问，不得凭想象补全页面结构
+6. fw-dev-spec 关联模式开启时，模块②③④⑤ 任一变更须先以 delta 回写 OpenSpec 再交付（见 `references/fw-dev-spec.md` 第九章）

@@ -46,7 +46,8 @@ frontend-workflow-skills/
     ├── create-fw-workflow.cjs       # 初始化多 agent 工作流
     ├── validate-fw-phase-gate.cjs   # 阶段门控验证
     ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
-    └── rollback-fw-phase.cjs        # 阶段回退（返工，仅后向）
+    ├── rollback-fw-phase.cjs        # 阶段回退（返工，仅后向）
+    └── sync-fw-openspec.cjs         # fw-dev-spec 活文档 ↔ OpenSpec 关联：init/sync/check（可选关联模式）
 ```
 
 ## 二、能力分支与触发场景
@@ -61,6 +62,7 @@ frontend-workflow-skills/
 | 接口定义生成 | "根据 Swagger 生成接口定义"、"open.json 转 API"、"接口文档转前端方法"、"增量同步接口" | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） |
 | 测试（待扩展） | "写单测/组件测试/E2E" | `testing.md` | 暂为骨架，未定稿 |
 | 缺陷修复（独立分支） | "修复 bug"、"缺陷修复"、"tapd bugfix"、"需求关联缺陷"、"批量修 bug" | `tapd-bugfix-workflow.md` | 修复后代码 + TAPD 评论/状态更新 + 活文档计划 |
+| 开发计划活文档（独立分支 3.7） | "开发计划活文档"、"fw_dev_spec"、"原型转开发计划"、"需求开发计划"、"活文档关联 OpenSpec" | `fw-dev-spec.md` | 本地分层活文档（五模块）；可选关联 OpenSpec 时建立双向锚点并单向同步 |
 
 > 也可在不经过路由的情况下，直接要求"读取 references/xxx.md 的某个章节"单独使用。
 
@@ -168,6 +170,14 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - **TAPD MCP 工具**：统一 `mcp__tapd__` 前缀，参数 schema 见 `tapd-tool-params.md`。
 - **活文档机制**：阶段间用 `⬜/🔄/✅/⏭` 状态标记，中断后可从 `.bugfix-workflow/` 计划文档恢复进度。
 - **人工 Gate**：缺陷筛选结果须确认；验证通过后才更新状态，修复阶段不自动改状态。
+
+### 5.7 开发计划活文档（`fw-dev-spec.md`，独立分支 3.7）
+- **触发**：提供 Figma 或 `.md` 原型需求文档，要求生成「开发计划活文档」（如"生成 fw_dev_spec 活文档"、"原型转开发计划"、"需求开发计划"）。
+- **定位**：是 3.2 OpenSpec PRD 的**可切换替代**——默认把需求与开发计划沉淀为项目内 `fw_dev_spec/<需求名-日期>/` 活文档（原型放子目录根、活文档放 `specs/`），供 ⑧⑨ 实现消费，**默认不写 `openspec/`**。
+- **五模块统一规范**：①当前项目说明 ②需求功能模块设计（含原型关联锚点）③按步骤开发计划 ④整体进度记录（⬜🔄✅⏭）⑤变更日志；单文档或多 spec 文档按需求大小询问用户。
+- **可选「OpenSpec 关联模式」**：生成活文档时经【可选 Gate · OpenSpec 关联】询问用户；确认后调用 `node scripts/sync-fw-openspec.cjs init` 初始化 OpenSpec 关联（注入双向锚点、写入同步指纹），活文档内嵌同步钩子配置块；后续模块②③④⑤ 任一变更须以 `+`/`-` delta 单向回写 OpenSpec（详见 `fw-dev-spec.md` 第九章）。本模式默认关闭，不改变默认二选一语义。
+- **关联校验**：`node scripts/sync-fw-openspec.cjs check <活文档路径>` 校验 openspec 环境、双向锚点完整性与同步指纹一致性。
+- **目录结构**：本项目当前**无 `openspec/` 目录**，若开启关联模式需先 `openspec init`（Skill 不会自动安装，会请用户确认）。
 
 ## 六、生成后检查清单（合并 Skill + 本项目规范）
 

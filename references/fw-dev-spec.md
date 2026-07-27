@@ -2,7 +2,7 @@
 
 > 本文件是 `frontend-workflow` 统一 skill 的第 7 个分支（**3.7 开发计划活文档**）的核心规则正文。命中分支后由 `SKILL.md` 路由 `Read` 本文件执行。
 >
-> 本分支是 **原型 → OpenSpec PRD（3.2）的可切换替代方案**：面向“需求理解 → 规范产出”上游阶段，把用户提供的 **Figma 原型** 或 **`.md` 格式原型** 统一转化为本地 `.md` 格式的「开发计划活文档」，供下游 ⑧⑨（`frontend-engineering-standards`）实现使用。**本分支不写入、不修改任何 OpenSpec（`openspec/`）文件**，与 OpenSpec 路径二选一、互不污染。
+> 本分支是 **原型 → OpenSpec PRD（3.2）的可切换替代方案**：面向“需求理解 → 规范产出”上游阶段，把用户提供的 **Figma 原型** 或 **`.md` 格式原型** 统一转化为本地 `.md` 格式的「开发计划活文档」，供下游 ⑧⑨（`frontend-engineering-standards`）实现使用。**本分支默认不写入、不修改任何 OpenSpec（`openspec/`）文件**，与 OpenSpec 路径默认二选一、互不污染；当用户在生成流程中显式开启「OpenSpec 关联模式」（见第九章）后，才按该章规则将活文档单向同步到 OpenSpec 并建立双向关联锚点。
 >
 > 输入源读取与需求分析**不在此重复定义**，交叉引用 `references/prototype-to-openspec-prd.md` 的第二章 2.2（Figma 获取）/ 2.3（`.md` 读取）/ 2.4（需求分析要素清单）/ 第十章（严禁猜测 / 停止询问 / `⚠️ 待确认` 协议）。活文档的进度状态标记**复用** `references/tapd-plan-template.md` 的 `⬜ / 🔄 / ✅ / ⏭` 约定与「进度总览 + Agent 更新规则 + 中断恢复」模式。
 
@@ -27,8 +27,9 @@
    → 存放原需求原型文档到 fw_dev_spec/<需求名-日期>/ 根
    → 确认目录（fw_dev_spec 不存在则询问是否新建；子目录名默认 需求名-日期 或询问）
    → 建议并【询问】组织形式（单文档 vs 多 spec 文档）
-   → 生成开发计划活文档（specs/ 子目录，五模块统一规范）
-   → 开发中实时更新进度（⬜→🔄→✅），变更记变更日志
+   → 【可选 Gate·OpenSpec 关联】询问是否同步初始化 OpenSpec 并建立关联（默认不开启，见第九章）
+   → 生成开发计划活文档（specs/ 子目录，五模块统一规范；开启关联模式时嵌入 9.4 同步配置块）
+   → 开发中实时更新进度（⬜→🔄→✅），变更记变更日志；开启关联模式时模块②③④⑤变动须先 delta 回写 OpenSpec（见 9.3）
 ```
 
 | 阶段 | 关键动作 | 产物 / 检查点 |
@@ -38,7 +39,8 @@
 | 3. 原型归档 | 原需求原型文档存 `fw_dev_spec/<需求名-日期>/` 根 | `原需求-原型.md` |
 | 4. 目录确认 | `fw_dev_spec/` 不存在则询问新建；子目录名确认 | 目标路径 |
 | 5. 组织形式决策 | 按需求大小建议并询问：单文档 / 多 spec 文档 | 用户选定 |
-| 6. 生成活文档 | 写 `specs/` 下文档，五模块统一规范 | 开发计划活文档 |
+| 5.5 可选 OpenSpec 关联 | 【可选 Gate】询问是否同步初始化 OpenSpec 关联；开启则 init 脚手架 + 双向锚点（见第九章） | 关联模式开关 / openspec 环境就绪 |
+| 6. 生成活文档 | 写 `specs/` 下文档，五模块统一规范（关联模式嵌入同步配置块） | 开发计划活文档 |
 | 7. 开发随行更新 | 实时更新进度与状态标记，变更追加变更日志 | 进度同步、可追溯 |
 
 ---
@@ -112,6 +114,7 @@
 
 - 项目背景、技术栈（Vue2/3、React、小程序等）、目录约定、运行/构建命令。
 - 本活文档范围与关联的原需求原型文档路径（如 `../原需求-原型.md`）。
+- 关联 OpenSpec（仅开启「OpenSpec 关联模式」时填写，见第九章）：`openspec/specs/<capability>/spec.md` 相对路径；并在本模块内嵌 9.4 同步配置块（`<!-- openspec-sync -->`），Agent 编辑活文档时**保留此块**。
 
 ### 模块 ② 需求功能模块设计
 
@@ -204,7 +207,7 @@
           ▼ ⑨ 生成业务逻辑并绑定静态页面             · frontend-engineering-standards
 ```
 
-- **与 3.2 OpenSpec 的关系**：二选一。本分支**不写入、不读取 `openspec/`**，亦不影响其 `specs/changes`；用户选定本分支即意味着用活文档替代 OpenSpec PRD 作为 ⑧⑨ 的输入。
+- **与 3.2 OpenSpec 的关系**：默认二选一。本分支默认**不写入、不读取 `openspec/`**，亦不影响其 `specs/changes`；用户选定本分支即意味着用活文档替代 OpenSpec PRD 作为 ⑧⑨ 的输入。**可选增强**：用户在生成流程中显式开启「OpenSpec 关联模式」（见第九章）后，活文档单向同步到 OpenSpec 并建立双向锚点，二者为「关联镜像」而非互斥；未开启则维持互斥。
 - **与 3.1 / 3.3 的关系**：同 3.2，下游实现（视觉还原 + 工程规范）仍由对应分支负责；本分支只产出需求与开发计划，不写代码、不做像素级还原。
 - **与 3.6 TAPD 缺陷修复的关系**：两者均为独立生命周期分支；缺陷修复的开发计划可参考本分支产出的活文档（如模块 ② 锚点），但各自目录与文档独立。
 
@@ -212,6 +215,87 @@
 
 ## 八、通用协作约定（沿用 skill 总原则）
 
-- **生成 → 检查 → 确认 Gate**：原型审阅（第三章）、目录新建（4.1）、组织形式（第六章）均为不可跳过的人工 Gate；到达即暂停等待用户确认。
+- **生成 → 检查 → 确认 Gate**：原型审阅（第三章）、目录新建（4.1）、组织形式（第六章）均为不可跳过的人工 Gate；到达即暂停等待用户确认。OpenSpec 关联（第九章 9.1）为**可选** Gate，默认项为「不开启」，不影响默认「二选一」语义，到达即询问但不强制。
 - **严禁猜测**：接口契约 / 业务规则 / 字段含义未知时停止询问，以 `⚠️ 待确认` 标记，绝不臆造（协议见 `prototype-to-openspec-prd.md` 第十章）。
-- **活文档随行更新**：开发中实时维护模块 ④ 进度与模块 ⑤ 变更日志，确保活文档始终反映当前真实状态，中断可恢复。
+- **活文档随行更新**：开发中实时维护模块 ④ 进度与模块 ⑤ 变更日志，确保活文档始终反映当前真实状态，中断可恢复。开启「OpenSpec 关联模式」时，模块 ②③④⑤ 任一变动须先按 9.3 以 delta 回写 OpenSpec 再结束本次任务，并在模块 ⑤ 记录本次同步。
+
+## 九、可选 OpenSpec 关联模式（单向同步）
+
+> 本模式是 3.7 的**可选增强**。默认情况下本分支仍与 OpenSpec「二选一、互不污染」（见第七章）；仅当用户在生成流程的「可选 Gate · OpenSpec 关联」中显式确认，才进入本模式：活文档仍是唯一真相源，OpenSpec 作为结构化镜像，二者通过双向锚点可追溯，活文档后续变更经 delta 回写 OpenSpec。
+
+### 9.1 触发时机（可选 Gate）
+
+在第六章「组织形式决策」确认后、生成活文档前，新增一个**可选**人工 Gate：
+
+```
+【可选 Gate · OpenSpec 关联】
+- 当前需求：<需求名>
+- 说明：是否同步初始化 OpenSpec 并在此活文档与 OpenSpec 间建立双向关联？
+        开启后：活文档为真相源，后续变更自动以 delta 回写 OpenSpec（单向）。
+        不开启：维持默认「二选一」，本分支不写任何 openspec/ 文件。
+- 请确认：[开启关联并初始化 OpenSpec] / [不开启（默认二选一）]
+```
+
+- 用户选「不开启」→ 维持默认行为，不写 `openspec/`。
+- 用户选「开启」→ 进入 9.2 初始化；本 Gate **不强制**，默认项为「不开启」，避免改变既有二选一语义。
+
+### 9.2 初始化关联（init）
+
+确认开启后，执行以下初始化（Agent 可调用 `scripts/sync-fw-openspec.cjs init` 完成脚手架与锚点注入）：
+
+1. **环境校验**：按 `references/prototype-to-openspec-prd.md` §3 检查 `openspec --version`；
+   - 未安装/缺失 → 复用 §3.2 安装引导话术，**停止并请用户确认**后再 `openspec init`，不静默创建。
+   - 已就绪但项目无 `openspec/` → 引导 `openspec init` 初始化目录。
+2. **确定 capability / change-id**：沿用 `prototype-to-openspec-prd.md` §7.5 kebab-case 约定；capability 表达需求能力域（可用「需求名」转 kebab-case），change-id 用动词短语（如首次快照 `bootstrap-<需求名>` 或 `init-from-fw-dev-spec`）。
+3. **脚手架**：创建 `openspec/changes/<change-id>/`（proposal/design/tasks 骨架）与 `openspec/specs/<capability>/spec.md`（空规范占位，待首次 sync 填充）。
+4. **注入双向锚点**：
+   - 活文档侧：在模块①「当前项目说明」写入「关联 OpenSpec」字段（指向 `openspec/specs/<capability>/spec.md` 相对路径），并嵌入 9.4 同步配置块。
+   - OpenSpec 侧：在 `openspec/specs/<capability>/spec.md` 顶部写入 `> 来源：fw_dev_spec/<需求名-日期>/specs/开发计划.md`（多文档模式指向对应模块文档），回指活文档。
+5. **写入同步指纹**：计算活文档模块②③④⑤ 文本的哈希，写入配置块的 `lastSyncFingerprint`。
+
+### 9.3 回写规则（sync，单向）
+
+活文档为唯一真相源。当模块②需求功能设计、③开发计划、④进度、⑤变更日志任一发生变动（配置块指纹漂移），须将变更以 `+`/`-` delta 回写 OpenSpec：
+
+- **语义转换由 Agent 负责**：依据 `references/prototype-to-openspec-prd.md` 第四章，将活文档模块②的功能点转为 `### Requirement:`（SHALL）+ `#### Scenario:`（GIVEN/WHEN/THEN），写入 `openspec/changes/<change-id>/specs/<capability>/spec.md`；模块③④⑤的进度/计划/变更可在 `design.md` / `tasks.md` 中同步记录。
+- **delta 规则**：复用 `prototype-to-openspec-prd.md` §4.3 / §6，用 `+`/`-` 表达增删，不整篇重写主 specs；不反向改写活文档。
+- **刷新指纹**：回写完成后重新计算并写入 `lastSyncFingerprint`，保持 check 一致。
+- Agent 可在每次编辑活文档后调用 `node scripts/sync-fw-openspec.cjs sync <live-doc-path>` 辅助脚手架与校验；脚本不重写 OpenSpec 写作逻辑，仅做文件脚手架、锚点校验与指纹管理。
+
+### 9.4 活文档同步钩子配置块
+
+在活文档模块①内嵌如下 HTML 注释块（由 `scripts/sync-fw-openspec.cjs` 读写，Agent 编辑活文档时**保留此块**）：
+
+```markdown
+<!-- openspec-sync -->
+openspecSync:
+  enabled: true
+  openspecPath: ../../openspec          # 相对活文档 specs/ 的路径
+  capability: <capability>
+  changeId: <change-id>
+  lastSyncFingerprint: <hash>
+<!-- /openspec-sync -->
+```
+
+**钩子约定（自包含）**：任何后续会话读取到本块且 `enabled: true` 时，即视为已开启关联模式；当模块②③④⑤发生变更（指纹漂移），**必须先执行 sync 回写 OpenSpec 再结束本次任务**；模块⑤变更日志须记录本次同步。
+
+### 9.5 校验（check）
+
+执行 `node scripts/sync-fw-openspec.cjs check <live-doc-path>` 输出结构化结果：
+
+- openspec 环境是否就绪、`openspec/specs/<capability>/spec.md` 是否存在；
+- 双向锚点是否完整（活文档模块①关联字段 + OpenSpec spec.md 来源回指）；
+- `lastSyncFingerprint` 与当前活文档模块②③④⑤ 哈希是否一致；
+- 不一致时列出待同步项（哪些模块变更未回写）。
+
+### 9.6 质量校验清单（关联模式补充项）
+
+在第六章 / 第八章既有清单基础上，开启关联模式后额外自检：
+
+- [ ] 「可选 Gate · OpenSpec 关联」已呈现且用户已确认开启（默认不开启不强制）
+- [ ] `openspec --version` 通过或已引导用户 `openspec init`（未静默创建）
+- [ ] capability / change-id 为 kebab-case，表达能力域（§7.5）
+- [ ] 双向锚点完整：活文档模块①关联字段 + OpenSpec spec.md 来源回指均存在
+- [ ] `lastSyncFingerprint` 为最新（与模块②③④⑤ 一致）
+- [ ] 回写使用 `+`/`-` delta，未整篇重写主 specs，且未反向改写活文档
+- [ ] 模块⑤变更日志记录了本次 OpenSpec 同步

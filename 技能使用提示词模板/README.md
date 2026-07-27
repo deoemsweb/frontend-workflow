@@ -1,7 +1,7 @@
 # 技能使用提示词模板（全场景 / 全流程）
 
 本目录是 `frontend-workflow` skill 的**用户侧调用入口**，按 skill 的能力分支与端到端流程组织，分为两个并列子目录：
-- **`单Agent模式/`**：9 个单 agent 顺序执行的提示词模板（完整版 + 精简版 + 占位符说明），每模板底部含「多 Agent 模式（可选）」说明块。
+- **`单Agent模式/`**：10 个单 agent 顺序执行的提示词模板（完整版 + 精简版 + 占位符说明），每模板底部含「多 Agent 模式（可选）」说明块。
 - **[`多Agent模式/`](./多Agent模式/README.md)**：与单 agent 模板一一对应的 9 个独立多 agent 编排提示词模板，可粘贴即触发编排器调度。
 
 单 agent 模板替换 `{{...}}` 后直接粘到对话即可触发对应分支；多 agent 模板无需追加触发句，粘贴即进入编排模式。
@@ -24,6 +24,7 @@
 | [07-测试能力（待扩展）.md](./单Agent模式/07-测试能力（待扩展）.md) | 单元 / 组件 / E2E / 视觉回归 | `testing.md`（占位） | 占位 · `test-engineer`（规范未定稿，触发时提示先补） | 触发测试分支（**规则未定稿，需先补规范**） |
 | [08-端到端全流程.md](./单Agent模式/08-端到端全流程.md) | 原型 → 交付 全链路 | 各 reference 协同 | 启用 · `workflow-orchestrator`（端到端默认多 agent） | 从 Figma/.md 一次走完还原→业务文档（⑤a 选定 OpenSpec / fw-dev-spec）→接口→第〇章前置编排→业务→验收 |
 | [09-TAPD缺陷修复.md](./单Agent模式/09-TAPD缺陷修复.md) | TAPD 需求关联缺陷 / 批量修 bug | `tapd-bugfix-workflow.md`（3.6 独立分支） | 启用 · `tapd-bugfixer`（独立分支） | 拉取筛选缺陷、生成活文档计划并执行修复/通知（缺陷修复独立生命周期，不进 ②~⑫ 主流程） |
+| [10-活文档关联OpenSpec.md](./单Agent模式/10-活文档关联OpenSpec.md) | 开发计划活文档 + OpenSpec 关联（3.7 可选增强） | `fw-dev-spec.md` 第九章（3.7 可选关联模式） | 可选 · `prd-analyst` | 生成 3.7 活文档时经【可选 Gate · OpenSpec 关联】开启关联：init 双向锚点 + 活文档同步钩子，模块②③④⑤ 变更以 delta 单向回写 OpenSpec（sync/check 校验）；默认不写 openspec/ |
 
 > 「多 Agent 模式」列：`可选` = 在提示词开头追加「用多 agent / 团队协作模式」即可启用；`启用` = 该场景默认即走多 agent（端到端由编排器统一调度，TAPD 由 tapd-bugfixer 独立执行）；`占位` = 角色已定义但规范未定稿。多 agent 模式下编排器不亲自写生成类代码，只做 dispatch / Gate / 状态推进（详见 `references/multi-agent-orchestration.md` §二、§十二）。
 
@@ -43,8 +44,8 @@
 
 ```
 技能使用提示词模板/        ← 本目录（用户侧调用入口）
-├── 单Agent模式/                ← 9 个单 agent 顺序执行模板（每模板底部含「多 Agent 模式」说明块）
-│   └── 01~09 各场景模板
+├── 单Agent模式/                ← 10 个单 agent 顺序执行模板（每模板底部含「多 Agent 模式」说明块）
+│   └── 01~10 各场景模板（10 为 3.7 的可选 OpenSpec 关联增强）
 ├── 多Agent模式/                ← 9 个独立多 agent 编排模板（与单Agent模式一一对应）
 │   └── 01~09-多Agent.md
 └── README.md             ← 本索引

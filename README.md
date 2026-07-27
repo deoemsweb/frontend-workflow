@@ -19,7 +19,7 @@ frontend-workflow-skills/            # 单一 skill 目录（= 安装单元）
 ├── references/                      # 领域规则正文（按需 Read，非自动注入）
 │   ├── figma-design-constraint.md   # Figma 像素级还原约束
 │   ├── prototype-to-openspec-prd.md # 原型（Figma / .md）→ OpenSpec PRD
-│   ├── fw-dev-spec.md               # 原型（Figma / .md）→ 开发计划活文档（OpenSpec 替代，独立分支 3.7）
+│   ├── fw-dev-spec.md               # 原型（Figma / .md）→ 开发计划活文档（独立分支 3.7，默认 OpenSpec 替代，可选关联 OpenSpec）
 │   ├── frontend-engineering-standards.md  # 前端工程通用规范
 │   ├── api-definition-generation.md # Swagger/OpenAPI → 前端接口定义自动生成
 │   ├── testing.md                   # 测试能力（占位，待扩展）
@@ -33,7 +33,8 @@ frontend-workflow-skills/            # 单一 skill 目录（= 安装单元）
 │   ├── workflow-state-utils.cjs     # 多 agent 状态机公共工具（phase 映射/状态读写/产物检查）
 │   ├── create-fw-workflow.cjs       # 初始化多 agent 工作流状态文件
 │   ├── validate-fw-phase-gate.cjs   # 阶段门控验证
-│   └── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
+│   ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
+│   └── sync-fw-openspec.cjs         # fw-dev-spec 活文档 ↔ OpenSpec 关联：init/sync/check（可选关联模式）
 └── README.md                        # 本文件
 ```
 
@@ -47,7 +48,7 @@ frontend-workflow-skills/            # 单一 skill 目录（= 安装单元）
 | 接口定义生成 | `references/api-definition-generation.md` | Swagger/open.json → 前端接口定义（函数+类型+JSDoc），自动探测项目既有接口模式并按其风格生成 |
 | 测试（待扩展） | `references/testing.md` | 单元 / 组件 / E2E / 视觉回归 骨架占位 |
 | 缺陷修复（独立分支） | `references/tapd-bugfix-workflow.md` | TAPD 缺陷修复全流程：提取 workspace_id → 读筛选缺陷 → 生成活文档计划 → 执行修复/发评论 → 验证后更新状态；前端代码修复复用工程规范 |
-| 开发计划活文档（独立分支，3.2 替代） | `references/fw-dev-spec.md` | 原型（Figma / .md）→ 本地分层活文档（fw_dev_spec/<需求名-日期>/）：Figma 先转 .md 原型审阅后存、五模块统一规范、单/多文档询问；替代 OpenSpec PRD 供 ⑧⑨ 使用，复用活文档进度约定 |
+| 开发计划活文档（独立分支，3.2 替代） | `references/fw-dev-spec.md` | 原型（Figma / .md）→ 本地分层活文档（fw_dev_spec/<需求名-日期>/）：Figma 先转 .md 原型审阅后存、五模块统一规范、单/多文档询问；替代 OpenSpec PRD 供 ⑧⑨ 使用，复用活文档进度约定；可选「OpenSpec 关联模式」开启后单向同步到 OpenSpec 并建立双向锚点（见 fw-dev-spec.md 第九章） |
 | 多 agent 编排（可选模式） | `references/multi-agent-orchestration.md` | 8 个 `.agents/` 角色协作：编排器按阶段 spawn 专职 agent，状态机门控推进、人工 Gate 统一管理、敏感操作统一询问 |
 
 > 各 `references/*.md` 仍可独立 `Read` 使用，不经过 `SKILL.md` 路由。

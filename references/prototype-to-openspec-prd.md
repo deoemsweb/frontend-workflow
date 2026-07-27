@@ -439,6 +439,7 @@ The system SHALL expire sessions after a configured duration.
 - 与 `figma-design-constraint` **不重叠**：后者管“视觉还原忠实度”，本 skill 管“需求与规范”。两者可共享同一原型数据源（Figma 或 `.md`），但产物不同。
 - 与 `frontend-engineering-standards` **不重叠**：后者管“代码工程规范”，本 skill 产出的 tasks.md 可作为其实现输入。
 - 复用其“设计稿分析”与“不确定处理”思路，但**不复制**其规则正文，仅交叉引用。
+- 与 `fw-dev-spec`（3.7 开发计划活文档）**默认二选一、互不污染**：本 skill 是上游 OpenSpec PRD 产出，fw-dev-spec 是面向“无 OpenSpec 环境 / 需求计划留项目内”的替代，默认不写 `openspec/`。**可选增强**：当 fw-dev-spec 在生成流程开启「OpenSpec 关联模式」（见 `fw-dev-spec.md` 第九章）时，活文档单向同步到本 skill 的 `openspec/`（capability/change-id 由 fw-dev-spec 侧确定），二者成为「关联镜像」而非互斥；此时 `spec.md`/`changes/` 作为活文档的结构化镜像，但语义转换仍在 fw-dev-spec 侧完成，本 skill 不反向改写活文档。
 
 ---
 
