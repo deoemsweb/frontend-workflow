@@ -1,5 +1,6 @@
 ---
 name: frontend-workflow
+version: 1.1.0
 description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级还原、Figma 原型转 OpenSpec PRD、前端工程通用规范（类型安全/API/状态/安全/性能）、Swagger 接口定义生成、测试能力（待扩展）、TAPD 缺陷修复全流程、开发计划活文档（fw_dev_spec）生成，以及多 agent 编排（状态机门控 / 阶段推进与回退）。当用户要求 Figma 还原、设计稿转代码、高保真还原、切图、Figma→OpenSpec PRD、生成需求文档、前端工程规范、类型/API/状态/安全、端到端还原设计稿并实现业务、按前端工作流开发、写单测/组件测试/E2E、TAPD 缺陷修复、修复 bug、缺陷修复、tapd bugfix、需求关联缺陷、批量修 bug、开发计划活文档、fw_dev_spec、dev spec、原型转开发计划、原型转活文档、需求开发计划、多 agent 编排、工作流返工/阶段回退、技能提示词模板、活文档关联 OpenSpec、活文档同步 OpenSpec、初始化 OpenSpec 关联、fw-dev-spec 同步 OpenSpec 时使用此 skill。
 ---
 

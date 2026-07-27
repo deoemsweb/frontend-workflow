@@ -1,5 +1,7 @@
 # frontend-workflow-skills
 
+> 当前版本：**v1.1.0**（版本号权威来源见 `SKILL.md` 的 `version` 字段，变更记录见 `CHANGELOG.md`）
+
 前端开发工作流**单一 Skill**。将原先分散的能力（Figma 还原约束、原型→OpenSpec PRD、前端工程规范、Swagger→接口定义生成、测试占位）合并为一个可一次安装的 skill：路由逻辑集中在 `SKILL.md`，领域规则拆到 `references/` 子文件，按运行时需求读取，兼顾「一次安装」与「上下文不臃肿」。
 
 ## 目录结构
