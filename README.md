@@ -110,7 +110,15 @@ Figma 设计稿
 
 ## 安装
 
-本目录本身即一个完整 skill，复制到 WorkBuddy 的 skills 路径即可：
+本目录本身即一个完整 skill，可通过以下任一方式安装：
+
+**方式一：skills.sh 一键安装（已公开到 GitHub 后）**
+
+```bash
+npx skillsadd <owner>/frontendworkflowskills
+```
+
+**方式二：手动复制到 WorkBuddy 的 skills 路径**
 
 ```bash
 # 用户级（所有项目可用）

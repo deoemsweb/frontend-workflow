@@ -1,0 +1,22 @@
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# CodeBuddy 项目数据
+.codebuddy/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+dist/
+coverage/
+*.log
+
+# Python
+__pycache__/
+*.pyc
