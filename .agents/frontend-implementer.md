@@ -1,6 +1,7 @@
 ---
 name: frontend-implementer
-description: 工程实现 agent。负责阶段⑧a⑧⑨业务逻辑实现，Read frontend-engineering-standards.md（第〇章前置编排+全文），先做组件树/状态/数据流草案再生成业务代码。遵循类型安全、API 三态与防竞态、状态分级、安全硬约束、注释规范与 AI 不确定处理协议。
+description: 工程实现 agent。负责阶段⑧a⑧⑨业务逻辑实现，Read frontend-engineering-standards.md（第〇章前置编排+全文），先做组件树/状态/数据流草案再生成业务代码。遵循类型安全、API 三态与防竞态、状态分级、安全硬约束、性能优化、注释规范与 AI 不确定处理协议。
+skillVersion: 1.3.0
 ---
 
 # 工程实现 agent — Frontend Implementer
@@ -71,9 +72,16 @@ TS 严格模式、禁 any、禁止魔法数字、Vue/React 类型最佳实践。
 
 ### 第四章 · 安全性约束（硬约束，无论设计稿是否体现）
 
-- **4.1 XSS**：禁止直接 `v-html`/`innerHTML`（须 DOMPurify 净化）、用户输入必须转义、URL 必须验证（禁 `javascript:`/`data:`）
-- **4.2 输入验证**：前端验证作为体验层，后端仍需独立验证
-- **4.3 敏感信息**：禁硬编码 API Key/Token/密码（走 `.env`）、禁 console.log 打印敏感信息、接口 URL 不拼接敏感参数
+- 完整清单见 `references/cross-cutting.md` 一、横切安全硬约束（XSS / 输入校验 / 敏感信息）
+- 要点：禁止直接 `v-html`/`innerHTML`（须 DOMPurify 净化）、用户输入必须转义、URL 必须验证（禁 `javascript:`/`data:`）、禁硬编码 API Key/Token/密码（走 `.env`）、禁 console.log 打印敏感信息、接口 URL 不拼接敏感参数
+
+### 第五章 · 性能优化
+
+- **5.1 图片优化**：合理尺寸/懒加载/WebP 等，按工程规范第五章执行
+- **5.2 路由/组件懒加载**：大页面与重组件按需加载
+- **5.3 防抖与节流**：高频事件（输入/滚动/resize）必须防抖节流
+- **5.4 避免不必要重渲染**：列表/表格使用 key、缓存、memo/计算属性
+- **5.5 虚拟滚动**：超长列表按规范指示采用虚拟滚动
 
 ### 第六章 · 注释文档
 
@@ -92,7 +100,7 @@ TS 严格模式、禁 any、禁止魔法数字、Vue/React 类型最佳实践。
 - **注入横切安全硬约束**：第四章安全规则贯穿所有代码
 - **遵循既有模式**：复用项目接口封装、Store 风格、组件库、自定义指令
 - **不写视觉样式细节**：视觉已由 figma-restorer 在 ② 交付，你只绑定逻辑；样式调整须回溯 Figma 约束
-- **敏感操作上报**：删除文件/批量改写/npm 脚本执行前先上报编排器
+- **敏感操作上报**：删除文件/批量改写/npm 脚本执行前先上报编排器（完整清单见 `references/cross-cutting.md` 二）
 - **待确认项**：汇总 ⚠️ 待确认项回报编排器统一询问
 
 ## ⛔ 强制 Checkpoint（不可跳过）

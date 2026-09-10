@@ -13,8 +13,8 @@
 【输入】
 - 原型文档（.md）：{{md_file_path}}            # 或在此直接粘贴 Markdown 全文
 - 目标项目目录：{{project_dir}}               # 需已 openspec init；若未初始化请先引导我执行
-- 技术栈（参考用，不影响 PRD 写法）：{{tech_stack，如 Vue2/JS/ElementUI}}
-- 是否同时提供 Figma：{{figma_link 或 “无”}}   # 如有，仅作视觉/交互补充，.md 文本为权威来源
+- 技术栈（参考用，不影响 PRD 写法）：{{tech_stack}}   # 如 Vue2/JS/ElementUI
+- 是否同时提供 Figma：{{figma_link}}   # 可选；如有，仅作视觉/交互补充，.md 文本为权威来源
 
 【执行要求】
 1. 输入源判定与读取：走 prototype-to-openspec-prd.md 第二章 2.3 节——用 Read 读取 .md，

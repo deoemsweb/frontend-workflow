@@ -215,7 +215,7 @@
 
 ## 八、通用协作约定（沿用 skill 总原则）
 
-- **生成 → 检查 → 确认 Gate**：原型审阅（第三章）、目录新建（4.1）、组织形式（第六章）均为不可跳过的人工 Gate；到达即暂停等待用户确认。OpenSpec 关联（第九章 9.1）为**可选** Gate，默认项为「不开启」，不影响默认「二选一」语义，到达即询问但不强制。
+- **生成 → 检查 → 确认 Gate**：原型审阅（第三章）、目录新建（4.1）、组织形式（第六章）均为不可跳过的人工 Gate；到达即暂停等待用户确认。各 Gate 的提问格式统一按 `references/grilling.md` 全局追问协议执行（❓逐题编号 + ➡️每题附推荐答案，可零修改确认）。OpenSpec 关联（第九章 9.1）为**可选** Gate，默认项为「不开启」，不影响默认「二选一」语义，到达即询问但不强制。
 - **严禁猜测**：接口契约 / 业务规则 / 字段含义未知时停止询问，以 `⚠️ 待确认` 标记，绝不臆造（协议见 `prototype-to-openspec-prd.md` 第十章）。
 - **活文档随行更新**：开发中实时维护模块 ④ 进度与模块 ⑤ 变更日志，确保活文档始终反映当前真实状态，中断可恢复。开启「OpenSpec 关联模式」时，模块 ②③④⑤ 任一变动须先按 9.3 以 delta 回写 OpenSpec 再结束本次任务，并在模块 ⑤ 记录本次同步。
 
@@ -244,7 +244,7 @@
 确认开启后，执行以下初始化（Agent 可调用 `scripts/sync-fw-openspec.cjs init` 完成脚手架与锚点注入）：
 
 1. **环境校验**：按 `references/prototype-to-openspec-prd.md` §3 检查 `openspec --version`；
-   - 未安装/缺失 → 复用 §3.2 安装引导话术，**停止并请用户确认**后再 `openspec init`，不静默创建。
+   - 未安装/缺失 → 复用 §3.2 安装引导话术（`npm install -g @fission-ai/openspec@latest`），**停止并请用户确认**后再 `openspec init`，不静默创建。
    - 已就绪但项目无 `openspec/` → 引导 `openspec init` 初始化目录。
 2. **确定 capability / change-id**：沿用 `prototype-to-openspec-prd.md` §7.5 kebab-case 约定；capability 表达需求能力域（可用「需求名」转 kebab-case），change-id 用动词短语（如首次快照 `bootstrap-<需求名>` 或 `init-from-fw-dev-spec`）。
 3. **脚手架**：创建 `openspec/changes/<change-id>/`（proposal/design/tasks 骨架）与 `openspec/specs/<capability>/spec.md`（空规范占位，待首次 sync 填充）。
@@ -257,7 +257,7 @@
 
 活文档为唯一真相源。当模块②需求功能设计、③开发计划、④进度、⑤变更日志任一发生变动（配置块指纹漂移），须将变更以 `+`/`-` delta 回写 OpenSpec：
 
-- **语义转换由 Agent 负责**：依据 `references/prototype-to-openspec-prd.md` 第四章，将活文档模块②的功能点转为 `### Requirement:`（SHALL）+ `#### Scenario:`（GIVEN/WHEN/THEN），写入 `openspec/changes/<change-id>/specs/<capability>/spec.md`；模块③④⑤的进度/计划/变更可在 `design.md` / `tasks.md` 中同步记录。
+- **语义转换由 Agent 负责**：依据 `references/prototype-to-openspec-prd.md` 第四章，将活文档模块②的功能点转为 `### Requirement:`（SHALL）+ `#### Scenario:`（GIVEN/WHEN/THEN），写入 `openspec/specs/<capability>/spec.md`（与 `scripts/sync-fw-openspec.cjs` 的脚手架/校验目标一致）；模块③④⑤的进度/计划/变更可在 `openspec/changes/<change-id>/design.md` / `tasks.md` 中同步记录。
 - **delta 规则**：复用 `prototype-to-openspec-prd.md` §4.3 / §6，用 `+`/`-` 表达增删，不整篇重写主 specs；不反向改写活文档。
 - **刷新指纹**：回写完成后重新计算并写入 `lastSyncFingerprint`，保持 check 一致。
 - Agent 可在每次编辑活文档后调用 `node scripts/sync-fw-openspec.cjs sync <live-doc-path>` 辅助脚手架与校验；脚本不重写 OpenSpec 写作逻辑，仅做文件脚手架、锚点校验与指纹管理。
@@ -270,7 +270,7 @@
 <!-- openspec-sync -->
 openspecSync:
   enabled: true
-  openspecPath: ../../openspec          # 相对活文档 specs/ 的路径
+  openspecPath: ../../../openspec       # 相对活文档所在 specs/ 目录解析（向上 3 级到项目根）
   capability: <capability>
   changeId: <change-id>
   lastSyncFingerprint: <hash>
@@ -290,7 +290,7 @@ openspecSync:
 
 ### 9.6 质量校验清单（关联模式补充项）
 
-在第六章 / 第八章既有清单基础上，开启关联模式后额外自检：
+在 `references/prototype-to-openspec-prd.md` 第八章质量清单基础上，开启关联模式后额外自检：
 
 - [ ] 「可选 Gate · OpenSpec 关联」已呈现且用户已确认开启（默认不开启不强制）
 - [ ] `openspec --version` 通过或已引导用户 `openspec init`（未静默创建）

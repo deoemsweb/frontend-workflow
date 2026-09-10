@@ -1,7 +1,7 @@
 # 技能使用提示词模板（全场景 / 全流程）
 
 本目录是 `frontend-workflow` skill 的**用户侧调用入口**，按 skill 的能力分支与端到端流程组织，分为两个并列子目录：
-- **`单Agent模式/`**：10 个单 agent 顺序执行的提示词模板（完整版 + 精简版 + 占位符说明），每模板底部含「多 Agent 模式（可选）」说明块。
+- **`单Agent模式/`**：11 个单 agent 顺序执行的提示词模板（完整版 + 精简版 + 占位符说明），每模板底部含「多 Agent 模式（可选）」说明块；其中 **11-需求拷问澄清为开工前置模板**，可先于 01 使用。
 - **[`多Agent模式/`](./多Agent模式/README.md)**：与单 agent 模板一一对应的 9 个独立多 agent 编排提示词模板，可粘贴即触发编排器调度。
 
 单 agent 模板替换 `{{...}}` 后直接粘到对话即可触发对应分支；多 agent 模板无需追加触发句，粘贴即进入编排模式。
@@ -11,7 +11,7 @@
 
 ## 模板索引与选用指引
 
-> 编号顺序对齐 SKILL.md 端到端工作流的阶段顺序：②还原 → ⑤PRD → ⑦b接口定义 → ⑨工程实现 → 测试 → 全流程。
+> 编号顺序对齐 SKILL.md 端到端工作流的阶段顺序：**11 需求拷问（开工前置，可先于 01）** → ②还原 → ⑤PRD → ⑦b接口定义 → ⑨工程实现 → 测试 → 全流程。
 
 | 文件（位于 `单Agent模式/`） | 覆盖场景 | 触发分支（reference） | 多 Agent 模式 | 何时用 |
 |------|----------|----------------------|------------|--------|
@@ -21,12 +21,13 @@
 | [04-开发计划活文档.md](./单Agent模式/04-开发计划活文档.md) | Figma / .md 原型 → 本地活文档 | `fw-dev-spec.md`（3.7 独立分支，3.2 OpenSpec 替代） | 可选 · `prd-analyst` | 原型转分层活文档（fw_dev_spec），五模块统一规范、单/多文档询问（不写 OpenSpec，供 ⑧⑨ 使用）；作为 02/03 PRD 的可切换替代方案，故紧随其后 |
 | [05-Swagger接口定义生成.md](./单Agent模式/05-Swagger接口定义生成.md) | Swagger / open.json → 前端接口定义 | `api-definition-generation.md` | 可选 · `api-contractor` | 接口文档转前端 API 函数 / 类型 / JSDoc，或增量同步（阶段⑦b） |
 | [06-业务文档接入与前端工程实现.md](./单Agent模式/06-业务文档接入与前端工程实现.md) | 业务文档接入 + 业务逻辑实现 / API / 状态 / 安全 | `frontend-engineering-standards.md`（第〇章 + 全文） | 可选 · `frontend-implementer` | 先经第〇章接入 OpenSpec / fw-dev-spec 业务文档并确认页面就绪，再按 tasks.md / 分步 Plan 逐步实现业务代码并更新进度（阶段⑧⑨） |
-| [07-测试能力（待扩展）.md](./单Agent模式/07-测试能力（待扩展）.md) | 单元 / 组件 / E2E / 视觉回归 | `testing.md`（占位） | 占位 · `test-engineer`（规范未定稿，触发时提示先补） | 触发测试分支（**规则未定稿，需先补规范**） |
+| [07-测试与用例生成.md](./单Agent模式/07-测试与用例生成.md) | 测试用例生成 + 单元 / 组件 / E2E / 视觉回归 | `testing.md`（3.5 正式规则）+ `cross-cutting.md`（铁律） | 可选 · `test-engineer`（两段式：用例文档→内嵌 Gate→代码） | 触发测试分支 / 生成测试用例，或在工作流 ⑨→⑩ 之间插入自动化测试环节 |
 | [08-端到端全流程.md](./单Agent模式/08-端到端全流程.md) | 原型 → 交付 全链路 | 各 reference 协同 | 启用 · `workflow-orchestrator`（端到端默认多 agent） | 从 Figma/.md 一次走完还原→业务文档（⑤a 选定 OpenSpec / fw-dev-spec）→接口→第〇章前置编排→业务→验收 |
-| [09-TAPD缺陷修复.md](./单Agent模式/09-TAPD缺陷修复.md) | TAPD 需求关联缺陷 / 批量修 bug | `tapd-bugfix-workflow.md`（3.6 独立分支） | 启用 · `tapd-bugfixer`（独立分支） | 拉取筛选缺陷、生成活文档计划并执行修复/通知（缺陷修复独立生命周期，不进 ②~⑫ 主流程） |
+| [09-TAPD缺陷修复.md](./单Agent模式/09-TAPD缺陷修复.md) | TAPD 需求关联缺陷 / 批量修 bug | `tapd-bugfix-workflow.md`（3.6 独立分支） | 可选 · `tapd-bugfixer`（独立分支） | 拉取筛选缺陷、生成活文档计划并执行修复/通知（缺陷修复独立生命周期，不进 ②~⑫ 主流程） |
 | [10-活文档关联OpenSpec.md](./单Agent模式/10-活文档关联OpenSpec.md) | 开发计划活文档 + OpenSpec 关联（3.7 可选增强） | `fw-dev-spec.md` 第九章（3.7 可选关联模式） | 可选 · `prd-analyst` | 生成 3.7 活文档时经【可选 Gate · OpenSpec 关联】开启关联：init 双向锚点 + 活文档同步钩子，模块②③④⑤ 变更以 delta 单向回写 OpenSpec（sync/check 校验）；默认不写 openspec/ |
+| [11-需求拷问澄清.md](./单Agent模式/11-需求拷问澄清.md) | 需求/方案拷问式澄清（3.10 全局追问协议，**开工前置**，可先于 01 使用） | `grilling.md` | 可选 · `workflow-orchestrator`（意图解读阶段同协议） | 开工前用 Frontier 轮次澄清需求（每题带推荐答案、每轮≤4问、同点≤2轮），产出共识清单后接对应 01~10 模板执行；也可单独压测既定方案 |
 
-> 「多 Agent 模式」列：`可选` = 在提示词开头追加「用多 agent / 团队协作模式」即可启用；`启用` = 该场景默认即走多 agent（端到端由编排器统一调度，TAPD 由 tapd-bugfixer 独立执行）；`占位` = 角色已定义但规范未定稿。多 agent 模式下编排器不亲自写生成类代码，只做 dispatch / Gate / 状态推进（详见 `references/multi-agent-orchestration.md` §二、§十二）。
+> 「多 Agent 模式」列：`可选` = 在提示词开头追加「用多 agent / 团队协作模式」即可启用；`启用` = 该场景默认即走多 agent（**仅端到端 08**，由编排器统一调度）。多 agent 模式下编排器不亲自写生成类代码，只做 dispatch / Gate / 状态推进（详见 `references/multi-agent-orchestration.md` §二、§十二）。
 
 ### 📁 多 Agent 模式 · 独立提示词模板（本目录另设）
 
@@ -36,7 +37,7 @@
 
 - **路由由 skill 完成**：提示词只需声明意图与输入，skill 的 `SKILL.md` 会判定分支并 `Read` 对应 `references/*.md`。
 - **检查循环**：每个生成阶段后跑「生成 → 检查(Agent 只读) → 确认 Gate」，单环节最多回流 3 次，超出转人工介入。
-- **人工 Gate 不可跳过**：Figma 还原的 ④、PRD 的 ⑦、接口定义的 ⑦c、业务的 ⑪、终验 ⑫ 必须等待用户确认。
+- **人工 Gate 不可跳过**：④⑤a⑦⑦c⑧a⑪⑫（⑤a/⑧a 为内嵌 Gate、⑦b「模式确认」为 ⑦b 内嵌 Gate）必须等待用户确认。
 - **严禁猜测**：接口契约 / 业务规则 / 字段含义未知时必须停下问，信息不足处标注 `> ⚠️ 待确认：...`。
 - **安全硬约束全程生效**：XSS / 输入校验 / 敏感信息保护，无论需求是否体现都必须遵守。
 
@@ -44,8 +45,9 @@
 
 ```
 技能使用提示词模板/        ← 本目录（用户侧调用入口）
-├── 单Agent模式/                ← 10 个单 agent 顺序执行模板（每模板底部含「多 Agent 模式」说明块）
-│   └── 01~10 各场景模板（10 为 3.7 的可选 OpenSpec 关联增强）
+├── 00-模板骨架.md               ← 新增模板的空白骨架（三段式结构 + 占位符规范 + 多 Agent 切换句）
+├── 单Agent模式/                ← 11 个单 agent 顺序执行模板（每模板底部含「多 Agent 模式」说明块）
+│   └── 11-需求拷问澄清（3.10 开工前置）+ 01~10 各场景模板（10 为 3.7 的可选 OpenSpec 关联增强）
 ├── 多Agent模式/                ← 9 个独立多 agent 编排模板（与单Agent模式一一对应）
 │   └── 01~09-多Agent.md
 └── README.md             ← 本索引
@@ -54,16 +56,51 @@ frontend-workflow skill
 ├── SKILL.md                         路由层（意图解读 + 阶段调度 + 章节指针；2.2c 多 agent 编排入口）
 ├── README.md / frontend-workflow-usage.md   能力索引与本项目适配
 ├── references/
-│   ├── figma-design-constraint.md       ① Figma 还原
-│   ├── prototype-to-openspec-prd.md     ② 原型(Figma/.md) → OpenSpec PRD
-│   ├── frontend-engineering-standards.md ③ 工程规范
-│   ├── api-definition-generation.md     ④ Swagger → 接口定义生成
-│   ├── testing.md                       ⑤ 测试（占位）
-│   ├── tapd-bugfix-workflow.md          ⑥ TAPD 缺陷修复（独立分支，3.6）
-│   ├── fw-dev-spec.md                   ⑦ 开发计划活文档（独立分支，3.7，OpenSpec 替代）
-│   └── multi-agent-orchestration.md    ⚙ 多 agent 编排协议（角色清单 / 阶段映射 / 状态机 / 敏感操作）
+│   ├── figma-design-constraint.md       3.1 Figma 还原
+│   ├── prototype-to-openspec-prd.md     3.2 原型(Figma/.md) → OpenSpec PRD
+│   ├── frontend-engineering-standards.md 3.3 工程规范
+│   ├── api-definition-generation.md     3.4 Swagger → 接口定义生成
+│   ├── testing.md                       3.5 测试与用例生成（可选环节，正式规则）
+│   ├── tapd-bugfix-workflow.md          3.6 TAPD 缺陷修复（独立分支）
+│   ├── fw-dev-spec.md                   3.7 开发计划活文档（独立分支，OpenSpec 替代）
+│   ├── multi-agent-orchestration.md     3.8 多 agent 编排协议（角色清单 / 阶段映射 / 状态机 / 敏感操作）
+│   ├── grilling.md                      3.10 全局追问协议（设计树 / Frontier 轮次 / 推荐答案 / 收敛护栏）
+│   └── cross-cutting.md                 ⚙ 横切共享块（安全硬约束 + 完成前验证铁律 + 敏感操作清单 + 只读白名单）
 ├── .agents/                           ⚙ 多 agent 模式下的 8 个专职角色（workflow-orchestrator / figma-restorer / prd-analyst / api-contractor / frontend-implementer / qa-reviewer / tapd-bugfixer / test-engineer）
-└── scripts/                          ⚙ 状态机脚本（create/validate/advance-fw-phase.cjs 等）
+└── scripts/                          ⚙ 状态机脚本（create/validate/advance/rollback/set-fw-gate/skip-fw-phase/finish-fw-workflow.cjs 等）
 ```
 
 > ⚙ = 多 agent 编排层。多 agent 模式与「直接 `Read` 单个 reference」的单 agent 模式并存，模板本身不改任何 reference 规则正文，只决定由谁（单 agent / 编排器+专职 agent）来执行。
+
+## 占位符速查总表
+
+> 约定：花括号内**只放占位符名**，取值说明/示例放括号外注释；同名占位符全库统一语义。新增模板请复用下表命名（骨架见 `00-模板骨架.md`）。
+
+| 占位符 | 语义 | 常用示例 | 主要出现于 |
+|--------|------|---------|-----------|
+| `{{figma_url_or_node}}` | Figma 链接或节点 key | `https://www.figma.com/file/xxx?node-id=12-34` | 01 |
+| `{{figma_url}}` / `{{figma_link}}` | Figma 链接（别名） | `https://www.figma.com/file/xxx` | 02 / 03 |
+| `{{tech_stack}}` | 技术栈 | `Vue2.6 + JS + ElementUI2` | 01/02/03/05/06/08 |
+| `{{scope}}` | 范围 | `订单列表页` / `全量` | 01 / 05 |
+| `{{output_dir}}` | 代码输出目录 | `src/views/order/` | 01 / 06 |
+| `{{project_dir}}` | 目标项目根目录 | `F:/Develop/www/userlive` | 02/03/05/08 |
+| `{{swagger_path}}` / `{{swagger_source}}` | Swagger 文档（路径或 URL，可选） | `docs/open.json` | 02 / 05/08 |
+| `{{md_file_path}}` / `{{md_path}}` | `.md` 原型路径 | `docs/prototype-order.md` | 03 / 04/10 |
+| `{{source_type}}` | 原型来源类型 | `Figma` 或 `md` | 04 / 10 |
+| `{{figma_source}}` | Figma 来源（source_type=Figma 时） | `figma:node-id=xxx` | 04 / 10 |
+| `{{requirement_name}}` | 需求名（子目录命名） | `订单管理` | 04 / 10 |
+| `{{project_type}}` | 项目类型（可选） | `Vue3` / `React` / `小程序` | 04 / 10 |
+| `{{mode}}` | 生成模式 | `全新生成` / `增量更新` | 05 |
+| `{{page_or_component_path}}` | 待绑定业务页面/组件（可选） | `src/views/order/list.vue` | 06 |
+| `{{biz_doc_path}}` | 业务文档路径（可选，自动探测） | `openspec/changes/add-export/tasks.md` | 06 |
+| `{{prototype_source}}` | 原型来源（Figma 链接或 .md 路径） | `https://www.figma.com/...` 或 `docs/prototype-order.md` | 06 / 08 |
+| `{{biz_doc_mode}}` | 业务文档方案 | `OpenSpec` / `fw-dev-spec` / `到⑤a决定` | 08 |
+| `{{start_end}}` | 起止阶段 | `从②到⑫` | 08 |
+| `{{test_scope}}` | 测试类型 | `E2E` / `组件测试` | 07 |
+| `{{target_path}}` | 待测目标 | `src/views/order/list.vue` | 07 |
+| `{{story_id}}` | TAPD 需求/故事 ID | `1138260062001029247` | 09 |
+| `{{frontend_dev}}` / `{{backend_dev}}` / `{{product}}` / `{{qa}}` | TAPD 相关人员姓名 | `开发人员xxx` | 09 |
+| `{{capability}}` | OpenSpec capability | `user-center` | 10 |
+| `{{change_id}}` | OpenSpec change-id | `init-from-fw-dev-spec` | 10 |
+| `{{org}}` | 活文档组织形式 | `单文档` / `多 spec 文档` | 10 |
+| `{{task_desc}}` | 任务/需求描述（拷问澄清对象） | `订单列表页加导出 Excel，需权限控制` | 11 |

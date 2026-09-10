@@ -36,17 +36,17 @@
 2. 调用 `node scripts/create-fw-workflow.cjs <任务名> --start 3` 初始化状态机（phase 3 = ⑤）。
 3. spawn `prd-analyst`（.agents/prd-analyst.md），dispatch 提示词须注入：
    - 必读：references/fw-dev-spec.md（3.7）、references/prototype-to-openspec-prd.md（2.2/2.3/2.4/第十章）；
-   - 敏感操作（mkdir / git / npm）前先上报（§六）；
+   - 敏感操作（mkdir / git / npm）前先上报（`references/cross-cutting.md` 二）；
    - 完成后回报产物路径与关键上下文。
 4. prd-analyst 按 fw-dev-spec.md 执行：输入读取与需求分析（交叉引用 prototype-to-openspec-prd.md，严禁猜测）；Figma→.md 原型先转草稿经【原型审阅 Gate】让我确认再存；目录 `fw_dev_spec/` 不存在先问我是否新建；先建议并问我用「单文档」还是「多 spec 文档」；按五模块（项目说明 / 功能模块+原型锚点 / 分步 Plan / 进度 / 变更日志）生成到 specs/，进度用 ⬜🔄✅⏭ 实时更新。
-5. 生成后 spawn `qa-reviewer`（只读）跑偏差报告到 `.codebuddy/plans/<任务名>-review-prd.md`。
+5. 生成后 spawn `qa-reviewer`（只读）产出偏差报告内容，由你落盘到 `.codebuddy/plans/<任务名>-review-prd.md`。
 6. 各人工 Gate（原型审阅、目录新建、单/多文档）由你暂停等我确认后，方推进状态机。
 ```
 
 ## 模板 B：精简版（一行触发，多 Agent）
 
 ```text
-用多 agent / 团队协作模式（frontend-workflow 编排器 workflow-orchestrator → spawn prd-analyst），按 references/fw-dev-spec.md（3.7）把 {{source_type}} 原型（{{figma_source | md_path}}）转为开发计划活文档，需求名 {{requirement_name}}。Figma 先读内容转 .md 原型给我审阅确认后再存；fw_dev_spec 不存在先问我是否新建，子目录默认 需求名-日期；先建议并问我用单文档还是多 spec 文档，再按五模块生成到 specs/，进度用 ⬜🔄✅⏭ 实时更新。不写 OpenSpec。
+用多 agent / 团队协作模式（frontend-workflow 编排器 workflow-orchestrator → spawn prd-analyst），按 references/fw-dev-spec.md（3.7）把 {{source_type}} 原型（Figma 填 {{figma_source}}，md 填 {{md_path}}）转为开发计划活文档，需求名 {{requirement_name}}。Figma 先读内容转 .md 原型给我审阅确认后再存；fw_dev_spec 不存在先问我是否新建，子目录默认 需求名-日期；先建议并问我用单文档还是多 spec 文档，再按五模块生成到 specs/，进度用 ⬜🔄✅⏭ 实时更新。不写 OpenSpec。
 ```
 
 ## 占位符说明

@@ -1,15 +1,15 @@
 # 原型需求文档（Figma / .md）→ OpenSpec 需求规范（PRD）
 
-此 skill 把产品提供的**原型需求文档**转化为结构化、可追溯、可协作更新的 OpenSpec 规范文档，并按交付模块自动拆解为 capability（specs）与 tasks。它支持两类输入源：
+本规则集把产品提供的**原型需求文档**转化为结构化、可追溯、可协作更新的 OpenSpec 规范文档，并按交付模块自动拆解为 capability（specs）与 tasks。它支持两类输入源：
 
 - **Figma 设计原型**：通过 Figma MCP 或链接/截图读取（见第二章 2.2）。
 - **`.md` 格式原型需求文档**：产品/AI 产出的 Markdown 需求草稿，含模块/页面/字段表/交互流程等（见第二章 2.3）。
 
-无论哪种输入源，OpenSpec 的**产出格式完全一致**（见第四~八章），二者仅在“如何读取与提取需求”这一步不同。此 skill 处于前端工作流的“需求理解 → 规范产出”上游阶段，产出物供后续 `figma-design-constraint`（像素级还原）与 `frontend-engineering-standards`（工程实现）衔接。
+无论哪种输入源，OpenSpec 的**产出格式完全一致**（见第四~八章），二者仅在“如何读取与提取需求”这一步不同。本规则集处于前端工作流的“需求理解 → 规范产出”上游阶段，产出物供后续 `references/figma-design-constraint.md`（像素级还原）与 `references/frontend-engineering-standards.md`（工程实现）衔接。
 
-## 何时使用此 Skill
+## 何时使用本规则集
 
-当用户请求以下任一操作时，触发此 skill：
+当用户请求以下任一操作时，触发本规则集：
 
 - 根据 Figma 设计稿生成 PRD / 需求文档 / 需求规格
 - **根据 `.md` 格式原型需求文档 / PRD 草稿生成 OpenSpec 规范**
@@ -19,7 +19,7 @@
 - 需求拆解为 specs 与 tasks、按模块拆分需求规范
 - 需求变更后更新已有 OpenSpec 规范
 
-> 本 skill 聚焦“需求与规范”，**不**输出代码、**不**做像素级视觉还原（那是 `figma-design-constraint` 的职责），仅交叉引用其“设计稿分析”思路。
+> 本规则集聚焦“需求与规范”，**不**输出代码、**不**做像素级视觉还原（那是 `references/figma-design-constraint.md` 的职责），仅交叉引用其“设计稿分析”思路。
 
 ---
 

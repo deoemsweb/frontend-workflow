@@ -1,11 +1,12 @@
-# @command://frontend-workflow 使用说明文档
+# frontend-workflow 项目适配手册（示例项目：userlive）
 
-> 适用项目：userlive（Vue 2.6 + JavaScript + Webpack/Vue CLI + ElementUI 2 + SCSS）
+> 适用项目：userlive（Vue 2.6 + JavaScript + Webpack/Vue CLI + ElementUI 2 + SCSS）——作为**适配示例**；其他项目沿用本手册的「默认写法 → 项目写法」映射思路类推。
 > 文档目的：说明该 Skill 的调用方式、工作流，以及如何在本项目规范下正确使用。
+> 用户侧现成提示词：`技能使用提示词模板/` 目录（单 Agent 11-需求拷问澄清【开工前置】+ 01~10 / 多 Agent 01~09 + 00-模板骨架），替换 `{{...}}` 占位符即可粘贴触发。
 
 ## 一、Skill 是什么
 
-`frontend-workflow` 是一个**单一入口**的前端开发工作流 Skill，把原本分散的 4 个子能力合并为一个目录（位于 `~/.codebuddy/skills/frontend-workflow-skills/`）。它自身**只做三件事**：
+`frontend-workflow` 是一个**单一入口**的前端开发工作流 Skill，把原本分散的 4 个子能力合并为一个目录（旧合集名 `frontend-workflow-skills` 已废弃，现名 `frontend-workflow`）。它自身**只做三件事**：
 
 1. **解读意图**：判断任务范围、技术栈、起止阶段。
 2. **按阶段调度**：命中分支后 `Read` 对应 `references/*.md` 再执行（规则正文不内联）；多 agent 模式下由编排器 spawn `.agents/` 专职角色执行。
@@ -16,37 +17,45 @@
 目录结构：
 
 ```
-frontend-workflow-skills/
+frontend-workflow/
 ├── SKILL.md                         # 路由层/编排器（触发条件 + 意图解读 + 阶段调度 + 多 agent 编排 + 章节指针）
 ├── README.md                        # 能力索引与安装说明
 ├── .agents/                         # 多 agent 角色定义（可选编排模式）
 │   ├── workflow-orchestrator.md     # 编排器：调度 / 人工 Gate / 状态推进 / 敏感操作统一询问
 │   ├── figma-restorer.md            # Figma 还原（阶段②）
-│   ├── prd-analyst.md               # 需求分析/PRD（阶段⑤）
+│   ├── prd-analyst.md               # 需求分析/PRD（阶段⑤；⑤a 由编排器先行确认）
 │   ├── api-contractor.md            # 接口契约（阶段⑦b⑦c）
-│   ├── frontend-implementer.md      # 工程实现（阶段⑧⑨）
+│   ├── frontend-implementer.md      # 工程实现（阶段⑧a⑧⑨）
 │   ├── qa-reviewer.md               # 只读检查（阶段③⑥⑩）
 │   ├── tapd-bugfixer.md             # TAPD 缺陷修复（独立分支 3.6）
-│   └── test-engineer.md             # 测试（独立分支 3.5，占位）
-└── references/
-    ├── figma-design-constraint.md   # ① Figma 像素级还原约束
-    ├── prototype-to-openspec-prd.md     # ② 原型（Figma / .md）→ OpenSpec PRD
-    ├── frontend-engineering-standards.md  # ③ 前端工程通用规范
-    ├── api-definition-generation.md # ④ Swagger/OpenAPI → 前端接口定义自动生成
-    ├── testing.md                   # ⑤ 测试能力（占位，待扩展）
-    ├── tapd-bugfix-workflow.md      # ⑥ TAPD 缺陷修复 5 阶段核心流程（独立分支）
-    ├── multi-agent-orchestration.md # ⑦ 多 agent 编排协议（角色/映射/上下文/状态机/敏感操作）
-    ├── fw-dev-spec.md               # ⑧ 原型 → 开发计划活文档（独立分支 3.7）
+│   └── test-engineer.md             # 测试与用例生成（可选环节 3.5，正式角色）
+└── references/                      # 领域规则正文（按需 Read）
+    ├── figma-design-constraint.md   # 3.1 Figma 像素级还原约束
+    ├── prototype-to-openspec-prd.md     # 3.2 原型（Figma / .md）→ OpenSpec PRD
+    ├── frontend-engineering-standards.md  # 3.3 前端工程通用规范
+    ├── api-definition-generation.md # 3.4 Swagger/OpenAPI → 前端接口定义自动生成
+    ├── testing.md                   # 3.5 测试与用例生成（可选环节，正式规则）
+    ├── tapd-bugfix-workflow.md      # 3.6 TAPD 缺陷修复 5 阶段核心流程（独立分支）
+    ├── multi-agent-orchestration.md # 3.8 多 agent 编排协议（角色/映射/上下文/状态机/敏感操作）
+    ├── fw-dev-spec.md               # 3.7 原型 → 开发计划活文档（独立分支）
+    ├── cross-cutting.md             # 横切共享块（安全硬约束 + 完成前验证铁律 + 敏感操作清单 + 只读白名单）
     ├── tapd-tool-params.md          # TAPD MCP 工具参数速查
     ├── tapd-grouping-rules.md       # 缺陷分组判定规则
     └── tapd-plan-template.md        # 活文档修复计划模板
 └── scripts/
+    ├── testing/                     # 测试执行层（整合自 webapp-testing）
+    │   ├── with_server.py           # 服务器生命周期编排（多 server，先 --help）
+    │   └── examples/                # Playwright 示例：元素发现 / 静态页 / console 捕获
     ├── extract_workspace_id.py      # 从 TAPD 实体 ID 提取 workspace_id
     ├── workflow-state-utils.cjs     # 多 agent 状态机公共工具
     ├── create-fw-workflow.cjs       # 初始化多 agent 工作流
-    ├── validate-fw-phase-gate.cjs   # 阶段门控验证
-    ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent）
+    ├── validate-fw-phase-gate.cjs   # 阶段门控验证（含 Gate 强校验）
+    ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent，不自动置位 Gate）
     ├── rollback-fw-phase.cjs        # 阶段回退（返工，仅后向）
+    ├── set-fw-gate.cjs              # 人工 Gate 显式置位
+    ├── skip-fw-phase.cjs            # 阶段显式跳过（biz-doc=skip）
+    ├── finish-fw-workflow.cjs       # 提前完成收尾
+    ├── smoke-fw-scripts.cjs         # 状态机脚本冒烟测试
     └── sync-fw-openspec.cjs         # fw-dev-spec 活文档 ↔ OpenSpec 关联：init/sync/check（可选关联模式）
 ```
 
@@ -60,7 +69,8 @@ frontend-workflow-skills/
 | 原型 → PRD | "根据 Figma 生成 PRD"、"Figma 转 OpenSpec"、"根据 .md 需求文档生成 PRD"、"把 .md 需求文档规范化为 OpenSpec"、"需求拆解为 specs/tasks" | `prototype-to-openspec-prd.md` | OpenSpec 规范文档 |
 | 工程规范 | "按前端工程规范实现"、"接入业务文档开发"、"连接 OpenSpec / fw-dev-spec 实现"、"集成 API"、"状态管理"、"前端安全/性能" | `frontend-engineering-standards.md`（先经第〇章接入业务文档与页面校验） | 业务代码 |
 | 接口定义生成 | "根据 Swagger 生成接口定义"、"open.json 转 API"、"接口文档转前端方法"、"增量同步接口" | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） |
-| 测试（待扩展） | "写单测/组件测试/E2E" | `testing.md` | 暂为骨架，未定稿 |
+| 测试与用例生成 | "写单测/组件测试/E2E/视觉回归"、"生成测试用例" | `testing.md`（两段式：用例文档→人工 Gate→代码） | 测试用例文档 + 可执行测试代码 + 执行报告 |
+| 需求拷问澄清（前置） | "需求拷问"、"追问澄清"、"澄清需求"、"grill" | `grilling.md`（3.10 全局追问协议） | 共识清单（已落定决策 + 假设 + 推荐后续分支）；frontier 清空并确认前不动手 |
 | 缺陷修复（独立分支） | "修复 bug"、"缺陷修复"、"tapd bugfix"、"需求关联缺陷"、"批量修 bug" | `tapd-bugfix-workflow.md` | 修复后代码 + TAPD 评论/状态更新 + 活文档计划 |
 | 开发计划活文档（独立分支 3.7） | "开发计划活文档"、"fw_dev_spec"、"原型转开发计划"、"需求开发计划"、"活文档关联 OpenSpec" | `fw-dev-spec.md` | 本地分层活文档（五模块）；可选关联 OpenSpec 时建立双向锚点并单向同步 |
 
@@ -71,14 +81,14 @@ frontend-workflow-skills/
 当任务为"端到端还原设计稿并实现业务"时，Skill 按固定顺序推进：
 
 ② 生成静态页面  → ③ 检查(Agent只读) → ④ **人工验收**【Gate】
-→ ⑤ 生成 OpenSpec PRD → ⑥ 检查 → ⑦ **人工确认需求**【Gate】
+→ ⑤ 生成业务文档（⑤a 确认方案：OpenSpec PRD 或 fw-dev-spec 活文档）→ ⑥ 检查 → ⑦ **人工确认需求**【Gate】
 → ⑦b⑦c 接口定义生成+人工验收(Swagger→函数/类型)【Gate】
 → ⑧ 设计桥梁(组件树/状态/数据流) → ⑨ 生成业务逻辑 → ⑩ 检查 → ⑪ **人工验收业务**【Gate】
 → ⑫ **终验**【Gate】
 
 关键协作机制：
 - **检查 Agent 只读不写**，输出结构化偏差报告，单环节最多回流 **3 次**，超出转"人工介入"。
-- **人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫）不可跳过**：即使检查通过，也必须暂停请用户确认。
+- **人工 Gate（④⑤a⑦⑦c⑧a⑪⑫）不可跳过**：即使检查通过，也必须暂停请用户确认（多 agent 模式下由编排器 `set-fw-gate.cjs` 置位后再推进）。
 - **可跳过阶段**：如已有静态页面则可跳过 ②③，但须在"意图解读"阶段与用户确认并记录。
 
 偏差报告格式（强制）：
@@ -159,8 +169,22 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - **增量更新**：Swagger 改动后只追加/修改对应函数，不整文件覆盖；Swagger 已移除的接口不自动删，标注「⚠️ 待确认」。
 - **严禁猜测**：Swagger 缺出参 schema、响应解包层级不明、命名冲突时**停止询问**，不臆造返回结构。
 
-### 5.5 测试（`testing.md`）
-当前为**骨架占位，规则未定稿**。触发测试需求时，Skill 会先读取本文件但提示"待扩展"，需人工补充具体规范后再执行。
+### 5.5 测试与用例生成（`testing.md`，两段式）
+- **触发**："写单测/组件测试/E2E/视觉回归"、"生成测试用例"，或 ⑨→⑩ 之间插入测试环节。
+- **两段式硬约束**：先从业务文档（OpenSpec Scenario / fw_dev_spec 活文档）生成 Markdown 测试用例文档（用例表 + 优先级 + 回溯锚点 + 覆盖矩阵），经**人工 Gate 审阅**确认后才生成可执行测试代码。
+- **本项目（Vue2.6 + JS）测试栈映射**：
+
+| 领域 | Skill 默认写法（Vue3+TS） | 本项目正确写法 |
+|------|--------------------------|----------------|
+| 单元/组件框架 | Vitest + @vue/test-utils v2 | **Jest + @vue/test-utils v1**（Vue2 兼容版）；测试文件 `tests/unit/**/*.spec.js` |
+| 组件挂载 | `mount` + Testing Library 查询 | `shallowMount`/`mount`；ElementUI 组件按需 `stubs` 或局部注册 |
+| 断言风格 | `expect`（Vitest） | `expect`（Jest）+ `@vue/test-utils` 的 `emitted()` / `find()` / `props()` |
+| TS 类型 | 显式类型 + 禁 `any` | **不适用**（JS）；用例数据与 mock 结构写清楚注释即可 |
+| E2E | Playwright（Python 脚本） | **通用**：`scripts/testing/with_server.py` 编排（`npm run serve` + 后端），动态页面先等 `networkidle` 再侦察 DOM |
+| 命令 | `npm run test` | 测试命令执行前必须向用户确认（敏感操作） |
+
+- **用例文档落位**：有 `fw_dev_spec/` 时放 `fw_dev_spec/<需求名-日期>/specs/测试用例.md`（复用 ⬜🔄✅⏭ 进度约定）；否则放项目 `test-cases/<feature>.md`。
+- **生成后检查清单**：用例覆盖全部 Scenario 并含边界异常；测试代码用 Jest+@vue/test-utils v1 写法（非 Vitest/Vue3 语法）；mock 走 `http.js` 同源路径（mock `src/utils/http/http.js` 导出，非裸 axios）；执行证据新鲜（完成前验证铁律，`references/cross-cutting.md` 三）；用例文档状态已回写。
 
 ### 5.6 TAPD 缺陷修复（`tapd-bugfix-workflow.md`，独立分支）
 
@@ -178,6 +202,11 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - **可选「OpenSpec 关联模式」**：生成活文档时经【可选 Gate · OpenSpec 关联】询问用户；确认后调用 `node scripts/sync-fw-openspec.cjs init` 初始化 OpenSpec 关联（注入双向锚点、写入同步指纹），活文档内嵌同步钩子配置块；后续模块②③④⑤ 任一变更须以 `+`/`-` delta 单向回写 OpenSpec（详见 `fw-dev-spec.md` 第九章）。本模式默认关闭，不改变默认二选一语义。
 - **关联校验**：`node scripts/sync-fw-openspec.cjs check <活文档路径>` 校验 openspec 环境、双向锚点完整性与同步指纹一致性。
 - **目录结构**：本项目当前**无 `openspec/` 目录**，若开启关联模式需先 `openspec init`（Skill 不会自动安装，会请用户确认）。
+
+### 5.8 需求拷问澄清（`grilling.md`，3.10 全局追问协议，前置）
+- **触发**："需求拷问"、"追问澄清"、"澄清需求"、"grill"，或用模板 `单Agent模式/11-需求拷问澄清.md`（开工前置，可先于 01 使用）。
+- **用途**：开工前把需求/方案的待决事项走成设计树，按 Frontier 轮次逐轮澄清（❓逐题编号 + ➡️每题推荐答案，每轮 ≤4 问，同一决策点最多追问 2 轮），产出共识清单后再进对应分支执行。
+- **本项目要点**：可自查的事实（技术栈 Vue2.6+Webpack、API 封装 `src/utils/http/http.js`、自定义指令清单等）agent 先自查不问用户；待决项（如业务文档方案、测试范围、起止阶段）才交用户拍板。澄清结论可直接作为 01~10 各模板的意图清单输入，不重复追问。
 
 ## 六、生成后检查清单（合并 Skill + 本项目规范）
 
@@ -198,4 +227,4 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 
 - 信息不足（接口契约未知、字段含义歧义、缺失关键状态设计、技术方案有分歧）时 **必须停止并询问用户，严禁猜测**。
 - 不确定项在文档中用 `> ⚠️ 待确认：...` 显式标记，确认后移除。
-- 不跳过人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫）；不自行扩展阶段顺序；安全规则为硬约束。
+- 不跳过人工 Gate（④⑤a⑦⑦c⑧a⑪⑫）；不自行扩展阶段顺序；安全规则为硬约束（`references/cross-cutting.md` 一）。

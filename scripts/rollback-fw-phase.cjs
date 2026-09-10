@@ -23,6 +23,7 @@ const {
   getPhaseName,
   getPhaseDisplay,
   getPhaseAgent,
+  PHASE_ARTIFACTS,
   TOTAL_PHASES
 } = require('./workflow-state-utils.cjs')
 
@@ -62,6 +63,16 @@ if (targetPhase >= state.phase) {
   process.exit(1)
 }
 
+// 不允许回退到被跳过（skipped）的阶段：skipped 语义表示"本阶段本就不执行"，
+// 回退复活它会打乱 --start / skip-fw-phase 建立的跳过边界
+if (state.phases?.[getPhaseKey(targetPhase)]?.status === 'skipped') {
+  console.error(JSON.stringify({
+    success: false,
+    blockers: [`目标 phase ${targetPhase}（${getPhaseDisplay(targetPhase)} ${getPhaseName(targetPhase)}）已被跳过（skipped），不可回退到 skipped 阶段`]
+  }, null, 2))
+  process.exit(1)
+}
+
 const now = new Date().toISOString()
 const updated = { ...state }
 
@@ -69,11 +80,21 @@ const updated = { ...state }
 for (let p = targetPhase; p < TOTAL_PHASES; p++) {
   const key = getPhaseKey(p)
   updated.phases[key] = { status: 'pending' }
+  // 清空回退区间内 gate 类型的确认，避免返工后误判已通过人工验收
+  const art = PHASE_ARTIFACTS[p]
+  if (art && art.type === 'gate') {
+    updated.gateChecks = { ...(updated.gateChecks || {}), [art.gateKey]: false }
+  }
 }
 // 目标 phase 置 running
 updated.phases[getPhaseKey(targetPhase)] = { status: 'running', startedAt: now }
 updated.phase = targetPhase
 updated.updatedAt = now
+// 回退后重新进入检查循环，回流计数清零（③⑥⑩ 的 3 次上限从头计算）
+updated.reviewLoopCount = { static: 0, prd: 0, impl: 0 }
+// 回退属于"返工"语义：状态应回到 running（即便曾到达终验 completed），
+// 否则 findActiveWorkflows 会误判为不活跃
+updated.status = 'running'
 
 try {
   writeStateFile(taskName, updated)

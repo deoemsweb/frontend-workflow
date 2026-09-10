@@ -114,7 +114,7 @@ function renderBlock(cfg) {
     '<!-- openspec-sync -->',
     'openspecSync:',
     '  enabled: ' + (cfg.enabled ? 'true' : 'false'),
-    '  openspecPath: ' + (cfg.openspecPath || '../../openspec'),
+    '  openspecPath: ' + (cfg.openspecPath || '../../../openspec'),
     '  capability: ' + (cfg.capability || ''),
     '  changeId: ' + (cfg.changeId || ''),
     '  lastSyncFingerprint: ' + (cfg.lastSyncFingerprint || ''),
@@ -156,7 +156,8 @@ function openspecInstalled() {
 }
 
 function resolveConfig(argv, liveDocPath) {
-  let openspecPath = '../../openspec';
+  // 活文档位于 fw_dev_spec/<需求名-日期>/specs/ 下时，到项目根 openspec/ 需要向上 3 级
+  let openspecPath = '../../../openspec';
   let capability = argv['--capability'];
   let changeId = argv['--change-id'];
 
@@ -189,10 +190,18 @@ function resolveConfig(argv, liveDocPath) {
 }
 
 function resolveOpenSpecDir(liveDocPath, cfg, argv) {
+  let dir
   if (argv['--openspec']) {
-    return path.resolve(process.cwd(), argv['--openspec']);
+    dir = path.resolve(process.cwd(), argv['--openspec'])
+  } else {
+    // 默认 '../../../openspec'：相对活文档所在 specs/ 目录向上 3 级到项目根
+    dir = path.resolve(path.dirname(liveDocPath), cfg.openspecPath || '../../../openspec')
   }
-  return path.resolve(path.dirname(liveDocPath), cfg.openspecPath || '../../openspec');
+  if (path.basename(dir) !== 'openspec') {
+    console.error('⚠️ 警告：解析到的 openspec 目录为 ' + dir + '（目录名不是 openspec/）。')
+    console.error('   请检查 openspecPath 相对层级：活文档位于 fw_dev_spec/<需求名-日期>/specs/ 时通常应为 ../../../openspec。')
+  }
+  return dir
 }
 
 // ---------------------------------------------------------------------------
@@ -340,11 +349,13 @@ function cmdCheck(argv) {
   const pass = (k, v) => results.push((v ? '✅' : '❌') + ' ' + k);
   const warn = (k, v) => results.push((v ? '✅' : '⚠️') + ' ' + k);
 
-  pass('openspec CLI 已安装', openspecInstalled());
-  pass('openspec/ 目录存在', fs.existsSync(openspecDir));
+  // 先查目录（目录缺失时不必探测 CLI，避免无谓的 npx 开销）
+  const openspecDirExists = fs.existsSync(openspecDir)
+  pass('openspec/ 目录存在', openspecDirExists);
+  pass('openspec CLI 已安装', openspecDirExists ? openspecInstalled() : false);
   pass('capability 规范存在 (' + cfg.capability + ')', fs.existsSync(specFile));
   if (fs.existsSync(specFile)) {
-    const s = readFileSync(specFile, 'utf8');
+    const s = readFileSafe(specFile) || '';
     pass('OpenSpec 侧来源回指锚点完整', s.includes('> 来源：'));
     pass('回指指向本活文档', s.includes(relPath(path.dirname(specFile), liveDocPath)));
   }

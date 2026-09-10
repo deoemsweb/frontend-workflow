@@ -1,6 +1,6 @@
 # 多 Agent 模式提示词模板 09：TAPD 缺陷修复（需求关联缺陷 / 批量修 bug）
 
-> 本模板是「多 Agent 协作模式」下 **TAPD 缺陷修复（独立分支 3.6）** 的**独立提示词**。TAPD 是**独立生命周期分支**，默认即由专职 agent **`tapd-bugfixer`**（`.agents/tapd-bugfixer.md`）执行，编排器 `workflow-orchestrator` 仅做入口路由，不进入 ②~⑫ 主流程状态机。
+> 本模板是「多 Agent 协作模式」下 **TAPD 缺陷修复（独立分支 3.6）** 的**独立提示词**。TAPD 是**独立生命周期分支**；**默认单 agent 顺序执行**，如需多 agent 在提示词开头追加「用多 agent / 团队协作模式」，即由专职 agent **`tapd-bugfixer`**（`.agents/tapd-bugfixer.md`）执行、编排器 `workflow-orchestrator` 仅做入口路由，不进入 ②~⑫ 主流程状态机。
 >
 > 完整编排协议：`references/multi-agent-orchestration.md`（§二、§十一 3.6）。单 agent 版见同级 `../单Agent模式/09-TAPD缺陷修复.md`。
 
@@ -14,7 +14,7 @@
 | 核心 reference | `tapd-bugfix-workflow.md` + `tapd-tool-params.md` + `tapd-grouping-rules.md` + `tapd-plan-template.md` |
 | 检查 agent | —（活文档计划自带进度与复核） |
 | 人工 Gate | 缺陷筛选确认、验证后更新状态 |
-| 状态机 | 不进主流程 12 阶段状态机；tapd-bugfixer 对 `.bugfix-workflow/` 活文档做断点恢复 |
+| 状态机 | 不进 ②~⑫ 主流程状态机；tapd-bugfixer 对 `.bugfix-workflow/` 活文档做断点恢复 |
 
 ## 模板 A：完整版（多 Agent 编排）
 
@@ -34,8 +34,8 @@
 【编排指令】
 1. 路由：确认启用多 agent 后，spawn `tapd-bugfixer`（.agents/tapd-bugfixer.md），dispatch 提示词注入：
    - 必读：references/tapd-bugfix-workflow.md（3.6）、tapd-tool-params.md、tapd-grouping-rules.md、tapd-plan-template.md；前端修复复用 references/frontend-engineering-standards.md（UI 类加 references/figma-design-constraint.md）；
-   - 横切安全硬约束（§七）；
-   - 敏感操作（git / npm / 删除文件 / 批量替换）与 TAPD 写操作（update_bug / create_comments）前**必须询问用户**（§六）；
+   - 横切安全硬约束（`references/cross-cutting.md` 一）；
+   - 敏感操作（git / npm / 删除文件 / 批量替换）与 TAPD 写操作（update_bug / create_comments）前**必须询问用户**（`references/cross-cutting.md` 二）；
    - 完成后回报产物路径与关键上下文。
 2. tapd-bugfixer 按 3.6 流程执行：阶段零 TAPD MCP 连通性探针（不通即中止）；提取 workspace_id、拉取筛选归我负责的 Bug 经【缺陷筛选确认 Gate】等我确认；生成 .bugfix-workflow/ 活文档计划后执行修复（前端复用工程规范、UI 类加视觉约束、后端/产品/测试评论通知）；每完成一项更新活文档状态；【验证通过 Gate】等我确认缺陷已修复并验证通过，才调 update_bug 更新状态。
 3. 你（编排器）持有最终询问职责；tapd-bugfixer 遇敏感操作 / TAPD 写操作先上报，由你统一向用户询问。

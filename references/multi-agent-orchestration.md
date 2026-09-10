@@ -1,6 +1,6 @@
 # 多 Agent 编排协议
 
-> 本文件是 frontend-workflow-skills **多 agents 协作模式的单一事实来源**。SKILL.md 只做指针路由；agent 角色定义见 `.agents/*.md`，其"知识来源"仍是本目录下各 `references/*.md`（规则正文不内联进 agent 文件）。
+> 本文件是 frontend-workflow **多 agents 协作模式的单一事实来源**。SKILL.md 只做指针路由；agent 角色定义见 `.agents/*.md`，其"知识来源"仍是本目录下各 `references/*.md`（规则正文不内联进 agent 文件）。
 >
 > 多 agent 模式与"reference 独立 `Read` 使用"两种模式**并存兼容**：本协议不改变任何既有 reference 的规则正文，只在编排层新增角色调度与状态机门控。
 
@@ -10,9 +10,9 @@
 
 | 场景 | 是否启用多 agent | 说明 |
 |------|:---:|------|
-| 端到端全流程（②~⑫） | ✅ 启用 | 由编排器按阶段 spawn 专职 agent |
+| 端到端全流程（②~⑫） | ✅ 启用 | 由编排器按阶段 spawn 专职 agent（唯一默认多 agent 场景） |
 | 单阶段深度任务（如只做 Figma 还原、只生成 PRD） | 可选 | 用户明确要求"用多 agent / 团队协作"时启用；否则按原单 agent 顺序执行即可 |
-| TAPD 缺陷修复（3.6） | ✅ 启用 | 由 tapd-bugfixer 独立执行，编排器仅做入口路由 |
+| TAPD 缺陷修复（3.6） | 可选 | 用户明确要求时由 tapd-bugfixer 执行；默认单 agent 顺序执行 |
 | 仅查阅某条规则 | ❌ 不启用 | 直接 `Read` 对应 reference，无需调度 |
 
 启用与否由编排器在**意图解读阶段**与用户确认（见 SKILL.md 2.1）。启用后，编排器**不亲自编写业务/视觉代码**，只做 dispatch、Gate 管理与状态推进。
@@ -25,16 +25,18 @@
 
 | Agent 文件 | 角色 | 覆盖阶段 | 核心 reference | 产物 | 读写权限约定 |
 |-----------|------|---------|----------------|------|-------------|
-| `workflow-orchestrator.md` | 编排器 | 全部（调度）+ 人工 Gate ④⑤a⑦b⑦c⑧a⑪⑫ | 本文件 + SKILL.md | 意图清单、状态推进、Gate 记录 | 不亲自写生成类代码；可写状态文件 |
+| `workflow-orchestrator.md` | 编排器 | 全部（调度）+ 人工 Gate ④⑤a⑦⑦c⑧a⑪⑫ | 本文件 + SKILL.md | 意图清单、状态推进、Gate 记录 | 不亲自写生成类代码；可写状态文件 |
 | `figma-restorer.md` | Figma 还原 | ② | `figma-design-constraint.md` + `frontend-engineering-standards.md` | 静态页面代码 + tokens.css | 可写页面/样式代码 |
-| `prd-analyst.md` | 需求分析/PRD | ⑤a⑤ | `prototype-to-openspec-prd.md` 或 `fw-dev-spec.md` | OpenSpec specs/proposal/tasks 或 `fw_dev_spec/` 活文档 | 可写文档目录 |
+| `prd-analyst.md` | 需求分析/PRD | ⑤ | `prototype-to-openspec-prd.md` 或 `fw-dev-spec.md` | OpenSpec specs/proposal/tasks 或 `fw_dev_spec/` 活文档 | 可写文档目录 |
 | `api-contractor.md` | 接口契约 | ⑦b⑦c | `api-definition-generation.md` | 接口定义文件（函数+类型+JSDoc） | 可写接口定义文件 |
 | `frontend-implementer.md` | 工程实现 | ⑧a⑧⑨ | `frontend-engineering-standards.md`（第〇章+全文） | 业务逻辑代码 | 可写业务代码 |
 | `qa-reviewer.md` | 只读检查 | ③⑥⑩ | 按阶段对应 reference 的 QA/质量清单/工程硬约束 | 结构化偏差报告 | **只读，不写任何代码/文档** |
 | `tapd-bugfixer.md` | TAPD 修复 | 独立分支 3.6 | `tapd-bugfix-workflow.md` + `tapd-tool-params.md` + `tapd-grouping-rules.md` + `tapd-plan-template.md` | 修复代码 + 评论 + 状态更新 | 可写修复代码/活文档；TAPD 写操作前须询问 |
-| `test-engineer.md` | 测试 | 独立分支 3.5（占位） | `testing.md` | 测试用例/报告（待扩展） | 规则未定稿，触发时提示先补规范 |
+| `test-engineer.md` | 测试 | 可选环节 ⑨→⑩（3.5） | `testing.md` + `cross-cutting.md`（铁律） | 测试用例文档 + 测试代码 + 执行报告 | 两段式：用例文档经内嵌人工 Gate 后才生成代码；测试命令执行前须询问 |
 
-> **只读约束**：qa-reviewer 的"只审查不修改"通过提示词强制（本文件 + 角色文件双重声明），不依赖 hooks 强制。其唯一输出是结构化偏差报告文件。
+> **⑤a 归属**：⑤a（业务文档方案确认：OpenSpec / fw-dev-spec / 跳过）是 phase 3 内的**人工 Gate，由编排器执行并置位**；prd-analyst 只负责 ⑤ 的文档生成，收到编排器传入的方案选择后执行。
+>
+> **只读约束**：qa-reviewer 的"只审查不修改"通过提示词强制（本文件 + 角色文件双重声明）+ 语义工具白名单（见 §8.1），不依赖 hooks 强制。其唯一输出是结构化偏差报告内容（由编排器落盘）。
 
 ---
 
@@ -47,18 +49,18 @@
 | 0 | ② | 生成静态页面 | figma-restorer | 静态页面代码（不强制文件校验） | |
 | 1 | ③ | 检查 | qa-reviewer | 偏差报告文件 `<name>-review-static.md` | |
 | 2 | ④ | 人工 Gate | orchestrator | `gateChecks.staticConfirmed=true` | ✅ |
-| 3 | ⑤a⑤ | 业务文档方案确认+生成 | prd-analyst | `openspec/` 或 `fw_dev_spec/` 目录 | ⑤a 内嵌 |
+| 3 | ⑤ | 业务文档生成 | prd-analyst | `openspec/` 或 `fw_dev_spec/` 目录 | ⑤a 由编排器确认 |
 | 4 | ⑥ | 检查 | qa-reviewer | 偏差报告文件 `<name>-review-prd.md` | |
 | 5 | ⑦ | 人工 Gate | orchestrator | `gateChecks.docConfirmed=true` | ✅ |
-| 6 | ⑦b⑦c | 接口定义生成+人工验收 | api-contractor | 接口定义文件 + `gateChecks.apiConfirmed=true` | ✅ |
+| 6 | ⑦b⑦c | 接口定义生成+人工验收 | api-contractor | 接口定义文件（不强制文件校验）+ `gateChecks.apiConfirmed=true` | ✅ |
 | 7 | ⑧a⑧⑨ | 前置编排+设计桥梁+业务逻辑 | frontend-implementer | 业务代码（不强制文件校验） | ⑧a 内嵌 |
 | 8 | ⑩ | 检查 | qa-reviewer | 偏差报告文件 `<name>-review-impl.md` | |
 | 9 | ⑪ | 人工 Gate | orchestrator | `gateChecks.bizConfirmed=true` | ✅ |
 | 10 | ⑫ | 终验 | orchestrator | 交付 | ✅ |
 
-> **人工 Gate 内嵌说明**：⑤a（业务文档方案确认）与 ⑧a（第〇章前置编排）是 phase 内部的人工确认点，由对应 agent 在其 reference 流程内暂停询问，不单独占内部 phase。
+> **人工 Gate 内嵌说明**：⑤a（业务文档方案确认）由**编排器**在 phase 3 内先行与用户确认后置位；⑦b「模式确认」（接口模式画像确认，api-contractor 流程第 3 步）为 ⑦b 内嵌 Gate；⑧a（第〇章前置编排）由 frontend-implementer 在其 reference 流程内暂停询问，经编排器向用户确认。三者均不单独占内部 phase。
 >
-> **代码类产物不强制文件校验**（phase 0/8）：与 jz 的"代码变更（git diff）不校验"一致，代码正确性交由 qa-reviewer 检查 + 后续人工 Gate 把关。
+> **代码类产物不强制文件校验**（phase 0/7）：与 jz 的"代码变更（git diff）不校验"一致，代码正确性交由 qa-reviewer 检查 + 后续人工 Gate 把关。
 
 ---
 
@@ -99,6 +101,8 @@
 
 ## 六、敏感操作统一询问清单
 
+> 本清单与 §七 的安全硬约束已提取至 `references/cross-cutting.md` 供各 `.agents/` 角色文件共享引用（避免多份拷贝漂移）；本节为编排层的权威定义。
+
 遵循"**默认不限制工具，敏感操作前统一询问用户**"原则。以下操作任何 agent 执行前**必须暂停并询问用户确认**，不得自动执行：
 
 | 类别 | 操作 |
@@ -129,7 +133,7 @@
 
 ## 八、编排器 Dispatch 提示词模板
 
-编排器 spawn 专职 agent 时，使用以下模板组装 dispatch 提示词（通过 Task 工具调用 subagent）：
+编排器 spawn 专职 agent 时，使用以下模板组装 dispatch 提示词（通过 Task/subagent 工具调用 subagent，按宿主环境选择，见 §8.1）：
 
 ```
 你是【<角色名>】，请严格按照 .agents/<角色文件>.md 履行职责。
@@ -152,35 +156,53 @@
 ## 约束
 【横切安全硬约束】（生成类 agent 注入，见 §七）
 - 遇敏感操作先上报，不得自行执行（见 §六）
+- 遇"严禁猜测"情形（接口契约/业务规则/字段含义不明、范围歧义）：**事实先自查**，确需用户裁决的决策按 `references/grilling.md` 上报编排器（含选项与推荐答案），不得自行向用户发问、不得带假设继续执行
 - 完成后回报产物路径与关键上下文，供编排器推进状态机
 ```
 
-### 8.1 qa-reviewer 专用：只读工具白名单（硬约束）
+### 8.1 qa-reviewer 专用：只读语义白名单（硬约束，按宿主映射工具名）
 
-spawn **qa-reviewer** 时，上述模板的「约束」块**替换为**以下只读白名单（与 `.agents/qa-reviewer.md` 的「工具白名单」小节一致），不得注入任何写工具权限：
+spawn **qa-reviewer** 时，上述模板的「约束」块**替换为**以下只读白名单（与 `.agents/qa-reviewer.md` 的「工具白名单」小节一致），不得注入任何写工具权限。白名单按**语义**定义，编排器 spawn 时映射为宿主实际工具名：
 
 ```
 ## 约束（只读，硬约束）
-你仅可使用以下工具，且全程不得调用任何写文件/改代码工具：
-- 允许：read_file / search_file / search_content / list_dir
-- 允许：execute_command 仅限只读命令（如 lint、grep、cat、tsc --noEmit、npm run lint）
-- 禁止：write_to_file / replace_in_file / delete_file
-- 禁止：execute_command 中任何写操作（如 rm、git commit、npm install 写入等）
-偏差与修复建议只能写入偏差报告（由编排器落盘），不得自行修改源码。
+你仅可使用以下**语义类别**的工具，且全程不得调用任何写文件/改代码工具：
+- 允许：读文件 / 文件搜索 / 内容搜索 / 目录列举（语义白名单）
+- 允许：命令执行工具，仅限只读命令（如 lint、grep、cat、tsc --noEmit、npm run lint）
+- 禁止：任何写文件 / 替换内容 / 删除文件工具
+- 禁止：命令执行中的任何写操作（如 rm、git commit、npm install 写入等）
+偏差与修复建议只能回传给编排器（由编排器落盘为偏差报告），不得自行修改源码。
 ```
+
+**宿主工具名映射表**（编排器 spawn 时按宿主翻译）：
+
+| 语义 | WorkBuddy / CodeBuddy | DeepSeek Harness |
+|------|----------------------|------------------|
+| 读文件 | `read_file` | `read` |
+| 文件搜索 | `search_file` | `glob` |
+| 内容搜索 | `search_content` | `grep` |
+| 目录列举 | `list_dir` | `glob` / `pwsh(Get-ChildItem)` |
+| 只读命令执行 | `execute_command`（只读） | `pwsh`（只读命令） |
+| 写文件（禁止） | `write_to_file` | `write`（禁止） |
+| 替换内容（禁止） | `replace_in_file` | `edit`（禁止） |
+| 删除文件（禁止） | `delete_file` | `pwsh(Remove-Item)`（禁止） |
+| spawn subagent | `Task` | `subagent` |
+
+> 生成类 agent 的工具同理按宿主映射；本表是编排层跨宿主兼容的唯一映射来源，宿主差异不改变语义白名单的约束力。
 
 ## 九、状态机使用说明
 
-四个脚本位于 `scripts/`，由编排器（或其辅助）通过 `execute_command` 调用。原则："**AI 负责认知，脚本负责执行**"——确定性校验交给脚本，判断与生成交给 agent。
+九个脚本位于 `scripts/`，由编排器（或其辅助）通过命令执行工具调用（`execute_command` / `pwsh` 等，按宿主）。原则："**AI 负责认知，脚本负责执行**"——确定性校验交给脚本，判断与生成交给 agent。
 
 ### 9.1 初始化工作流
 
 ```bash
-node scripts/create-fw-workflow.cjs <任务名> [--start <内部phase>] [--title "<标题>"]
+node scripts/create-fw-workflow.cjs <任务名> [--start <内部phase>] [--title "<标题>"] [--biz-doc <openspec|fw-dev-spec|skip>]
 ```
 
 - 在 `.codebuddy/plans/` 创建 `<任务名>-fw-state.json`，初始化 `phases{}` 与 `gateChecks{}`
-- `--start` 支持从指定内部 phase 起始（跳过②③等场景，如已有静态页面则从 phase 3 起）
+- `--start` 支持从指定内部 phase 起始（跳过②③等场景，如已有静态页面则从 phase 3 起）；`--start` 之前的阶段标记为 `skipped`
+- `--biz-doc` 把业务文档方案预选写入状态文件 `bizDocPlan`（默认 null，待 ⑤a 确认）；值为 `skip` 时 validate 跳过业务文档目录产物校验（见 §9.7）
 - 输出初始状态 JSON
 
 ### 9.2 门控验证
@@ -203,11 +225,25 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 
 ### 9.4 人工 Gate 置位
 
-人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫）由编排器在获得用户确认后，将对应 `gateChecks` 字段置为 `true` 并写回状态文件（可用脚本或直接 `write_to_file`），门控才会放行后续生成阶段——把"未经确认不得进入下一阶段"从提示词约定升级为脚本强制。
+人工 Gate（④⑤a⑦⑦c⑧a⑪⑫）由编排器在**获得用户确认后**调用置位脚本写回状态文件，门控才会放行离开该 Gate 阶段——把"未经确认不得进入下一阶段"从提示词约定升级为**脚本强制**：
 
-### 9.5 待确认项管理
+```bash
+node scripts/set-fw-gate.cjs <任务名> <gateKey>        # gateKey: staticConfirmed | docConfirmed | apiConfirmed | bizConfirmed
+node scripts/set-fw-gate.cjs <任务名> <gateKey> --unset # 回退返工时复位
+```
 
-需求/方案中的模糊点写入状态文件 `pendingConfirmations[]`（`{ id, question, resolved, source }`）。`resolved=false` 存在时，门控阻断进入下一生成阶段，须用户逐项确认后由编排器置位。
+- `validate-fw-phase-gate.cjs` 强校验：离开 Gate 阶段前，对应 `gateChecks[gateKey]` 必须为 `true`，否则 blocker 阻断
+- `advance-fw-phase.cjs` **不自动置位** Gate；置位只有通过本脚本（或等价的人工确认记录）完成
+- 置位记录写入状态文件 `gate_<gateKey>.{value,at}` 供事后审计
+
+### 9.5 待确认项管理（grilling 语义）
+
+需求/方案中的模糊点写入状态文件 `pendingConfirmations[]`，schema 为 `{ id, question, options, recommendation, resolved, source }`——`question` 为决策问题，`options` 为可选项，`recommendation` 为基于已探查事实的推荐答案（承接 `references/grilling.md` 的 frontier 轮次格式）。
+
+执行规则：
+- agent 上报的不确定点由编排器登记入列（`resolved=false`）；存在未 resolved 项时门控阻断进入下一生成阶段；
+- 编排器把待确认项**凑满一轮 frontier**（每轮 ≤4 问）后统一按「❓ Q 编号 + ➡️ 推荐答案」格式问用户（格式见 grilling.md 第三章）；
+- 用户逐项确认（或整体授权默认）后由编排器置位 `resolved=true` 并回写上下文；同一决策点最多追问 2 轮，超限按 grilling.md 第四章降级为假设清单。
 
 ### 9.6 阶段回退（返工）
 
@@ -217,10 +253,28 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>
 ```
 
-- 仅允许后向回退（`目标 phase < 当前 phase`），否则报错退出
-- 将 `[目标 phase, TOTAL_PHASES)` 区间内所有 phase 重置为 `pending`（清除 `startedAt/completedAt`），目标 phase 置 `running`
+- 仅允许后向回退（`目标 phase < 当前 phase`），否则报错退出；**目标为 skipped 的阶段不可回退**（skipped 语义表示本阶段本就不执行）
+- 将 `[目标 phase, TOTAL_PHASES)` 区间内所有 phase 重置为 `pending`（清除 `startedAt/completedAt`），目标 phase 置 `running`；区间内人工 Gate 的 gateChecks 复位 false；回流计数 `reviewLoopCount` 清零
 - 输出 `{ success, fromPhase, toPhase, nextAgent, ... }`；编排器据 `nextAgent` 重新 spawn 对应角色
 - 回退后再次推进前，`validate-fw-phase-gate.cjs` 仍会对 `pending/running` 前置 phase 正常拦截
+
+### 9.7 阶段跳过与提前完成
+
+- **阶段跳过**（如 ⑤a 确认"跳过业务文档"后，跳过 ⑤⑥⑦）：
+
+```bash
+node scripts/skip-fw-phase.cjs <任务名> 3 4 5
+```
+
+  已完成（completed）阶段不可跳过；跳过人工 Gate 阶段时其 gateChecks 同步复位；若跳过的是当前阶段，自动前进到下一个未 skipped 的 phase。
+- **提前完成**（如接口-only 任务走完 ⑦b⑦c、静态页-only 任务走完 ④ 后收尾）：
+
+```bash
+node scripts/finish-fw-workflow.cjs <任务名>
+```
+
+  将剩余未完成阶段标记 skipped、终验置 completed、工作流 status=completed，避免状态文件永久 running。
+- **冒烟测试**：改动状态机脚本后可运行 `node scripts/smoke-fw-scripts.cjs`（临时目录全链路回归，34 项断言）。
 
 ---
 
@@ -244,15 +298,15 @@ node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>
 
 ## 十一、独立分支说明
 
-- **3.6 TAPD 缺陷修复**：不进 12 阶段主流程状态机。编排器路由到 tapd-bugfixer，由其对 `.bugfix-workflow/` 活文档做断点恢复，自带人工 Gate（缺陷筛选确认、验证后更新状态）。
+- **3.6 TAPD 缺陷修复**：不进 ②~⑫ 主流程状态机。编排器路由到 tapd-bugfixer，由其对 `.bugfix-workflow/` 活文档做断点恢复，自带人工 Gate（缺陷筛选确认、验证后更新状态）。
 - **3.7 fw-dev-spec 单独触发**：作为 PRD 产出单独使用时，由 prd-analyst 执行，产物供后续 ⑧⑨ 经第〇章探测接入。
-- **3.5 测试**：testing.md 为占位骨架。test-engineer 触发时**提示"测试规范未定稿，需先补充 testing.md，勿套通用模板"**，不自动生成测试代码。
+- **3.5 测试（可选环节，正式）**：定位为主流程可选环节，插在 ⑨→⑩ 之间，由 test-engineer 执行，规则以 `testing.md` 为准。采用**两段式**：① 从业务文档（OpenSpec Scenario / fw_dev_spec 活文档）生成 Markdown 测试用例文档；② 经**内嵌人工 Gate（用例审阅）**确认后才生成可执行测试代码（E2E 走 `scripts/testing/` 的 Playwright 执行层）。该 Gate 为角色流程内嵌 Gate（同 ⑤a/⑧a 模式），不占状态机 phase；测试命令执行属敏感操作，须先上报编排器询问；"测试通过"断言受 `cross-cutting.md` 三（完成前验证铁律）约束。
 
 ---
 
 ## 十二、边界与不变量
 
 1. **编排器不亲自写生成类代码**：②⑤⑦b⑦c⑧⑨ 的生成工作必须 dispatch 给对应 agent；编排器只做调度、Gate、状态推进。
-2. **人工 Gate 不可跳过**：④⑤a⑦b⑦c⑧a⑪⑫ 必须人工确认，即使 qa-reviewer 报告通过。
+2. **人工 Gate 不可跳过**：④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认（⑤a 由编排器执行、⑦b「模式确认」为内嵌 Gate、⑧a 内嵌于 ⑧），即使 qa-reviewer 报告通过；确认后经 `set-fw-gate.cjs` 置位，未置位不得推进。
 3. **reference 规则正文不内联**：agent 文件只做指针引用，执行前必须 `Read` 对应 reference；本协议与各 reference 冲突时，**以各 reference 的领域规则为准**，本协议只管编排。
 4. **两种模式并存**：用户可绕过编排直接 `Read` 单个 reference 使用，多 agent 模式不是唯一入口。

@@ -144,23 +144,23 @@ options: { "entity_type": "bugs" }
 
 进入阶段四前，先检查是否存在可恢复的计划文档：
 
-1. 读取 `.bugfix-workflow/bugfix-plan-YYYY-MM-DD.md`（当天日期）
+1. 读取 `.bugfix-workflow/` 下**最新**的 `bugfix-plan-*.md`（按文件名日期/修改时间取最新；跨天中断也能恢复）
 2. 检查「当前状态」字段：
    - `✅ 已完成 — 等待验证` → 跳到阶段五
    - `⬜ 计划已生成` → 从 4.1 开始正常执行
    - 某阶段为 `🔄` → 从该阶段中断处继续（读取进度总览表定位）
-3. 若文件不存在 → 从阶段一正常执行
+3. 若目录下无任何 `bugfix-plan-*.md` → 从阶段一正常执行
 
 ### 4.1 前端缺陷 — 代码修复
 
 > **规范前置（整合要点）**：开始写代码前，先 `Read` `references/frontend-engineering-standards.md`（前端工程通用规范：类型安全 / API 三态 / 状态管理 / 安全硬约束 / 性能优化 / 注释文档）；若该 Bug 属 UI 展示/样式/交互类，再加 `Read` `references/figma-design-constraint.md`（像素级还原约束与 QA Checklist）。修复必须遵循上述规范的硬约束，尤其 **禁止 `v-html`、用户输入须转义、禁止硬编码敏感信息** 等安全规则，无论 TAPD 描述是否体现均须遵守。
 
-1. 读取 `.bugfix-workflow/bugfix-plan-YYYY-MM-DD.md`，定位进度总览表，将「A. 前端修复」标记为 `🔄`
+1. 读取 `.bugfix-workflow/` 下最新的 `bugfix-plan-*.md`，定位进度总览表，将「A. 前端修复」标记为 `🔄`
 2. 按修复计划逐个修复，**每个 Bug 修复前后更新计划文档状态**：
    - 开始修复 → 将 Bug 状态标记为 `🔄 修复中`
    - 修复完成 → 将 Bug 状态标记为 `✅ 已修复`，补充修复记录
    - 检查 `package.json` 中是否存在 `lint`/`type-check` script，有则运行；无则目检
-3. 全部分组 A Bug 修复完成后，进度总览「A. 前端修复」标记为 `✅`
+3. 全部分组 A Bug 修复完成后，进度总览「A. 前端修复」标记为 `✅`，**实施步骤第 1 步勾选为 `[x]`**
 4. 汇总变更
 
 ### 4.2 后端缺陷 — 发 TAPD 评论

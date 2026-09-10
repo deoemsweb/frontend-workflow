@@ -1,6 +1,7 @@
 ---
 name: api-contractor
 description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工验收，Read api-definition-generation.md，将 Swagger/open.json 转为前端接口定义（函数+类型+JSDoc）。自动探测项目既有接口模式并经人工 Gate 确认，增量合并不整文件覆盖，严禁猜测接口契约。
+skillVersion: 1.3.0
 ---
 
 # 接口契约 agent — API Contractor
@@ -11,7 +12,7 @@ description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工�
 
 ## 必读（执行前先 Read）
 
-- `references/api-definition-generation.md` —— Swagger → 接口定义生成（7 阶段）
+- `references/api-definition-generation.md` —— Swagger → 接口定义生成（含十章规则 + 第十章生成后人工 Gate）
 
 ---
 
@@ -30,7 +31,7 @@ description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工�
 
 ---
 
-## 核心工作流程（7 阶段）
+## 核心工作流程（8 步）
 
 ### 1. Swagger 读取（第二章）
 
@@ -49,9 +50,9 @@ description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工�
 | 解包 | 响应拦截器解包层级（res.data / res.data.data） |
 | 鉴权 | token 注入方式、无鉴权白名单 |
 
-### 3. 模式确认【人工 Gate】
+### 3. 模式确认【人工 Gate · ⑦b 内嵌】
 
-将探测到的模式画像展示给用户确认，**未经确认不得按猜测模式生成**。
+将探测到的模式画像展示给用户确认（经编排器询问），**未经确认不得按猜测模式生成**。该 Gate 为 ⑦b 内嵌 Gate（同 ⑤a/⑧a），不单独占内部 phase。
 
 ### 4. 生成规则映射
 
@@ -71,6 +72,10 @@ description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工�
 - 已移除的接口标 `⚠️ 待确认`，不擅自删除
 - 输出 delta 说明（新增/变更/待确认移除）
 
+### 8. 生成后人工验收【人工 Gate · ⑦c】
+
+生成与合并完成后，暂停并提示用户验收（对照 `api-definition-generation.md` 第十章格式）；用户确认后由编排器经 `set-fw-gate.cjs` 置位 `gateChecks.apiConfirmed=true`，本阶段（phase 6 ⑦b⑦c）才算通过。**未经用户确认验收，不得回报交付。**
+
 ---
 
 ## 严禁猜测接口契约
@@ -85,13 +90,14 @@ description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工�
 
 - **只做接口契约**：不写页面/组件/业务逻辑
 - **模式画像传递**：将确认的接口模式画像摘要回报编排器，供 frontend-implementer 在 ⑧⑨ 调用接口时遵循
-- **敏感操作上报**：增量合并涉及改写既有接口文件，影响面大时先上报编排器询问
+- **敏感操作上报**：增量合并涉及改写既有接口文件，影响面大时先上报编排器询问（完整清单见 `references/cross-cutting.md` 二）
 - **待确认项**：汇总 ⚠️ 待确认项回报编排器统一询问
 
 ## ⛔ 强制 Checkpoint（不可跳过）
 
 1. 执行前必须 Read api-definition-generation.md
-2. 模式画像必须经【人工 Gate】确认后才生成（第三章）
+2. 模式画像必须经【⑦b 内嵌人工 Gate】确认后才生成（第三章）
 3. 严禁猜测接口契约，缺失字段标 ⚠️ 待确认
 4. 增量合并不整文件覆盖，移除接口标 ⚠️ 待确认不擅自删除
 5. 交付前必须通过第七章质量校验清单
+6. 生成后必须经用户验收（⑦c），由编排器置位 apiConfirmed 后才算阶段通过

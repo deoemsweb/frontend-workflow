@@ -3,11 +3,12 @@
  * frontend-workflow 多 agent 状态机 — 公共工具模块
  *
  * 提供 fw 工作流的 Phase 定义、状态文件读写、产出物检查、待确认项检查等公共函数。
- * 被 create-fw-workflow / validate-fw-phase-gate / advance-fw-phase 三个脚本复用。
+ * 被 create-fw-workflow / validate-fw-phase-gate / advance-fw-phase / rollback-fw-phase /
+ * set-fw-gate / skip-fw-phase / finish-fw-workflow 等脚本复用。
  *
  * 阶段编号约定：
  *   - 状态机内部用顺序整数 phase（0~10）存储；
- *   - 展示层用 ②~⑫ 原编号（含 ⑤a/⑦b⑦c/⑧a 子阶段）；
+ *   - 展示层用 ②~⑫ 原编号（含 ⑦b⑦c/⑧a 子阶段；⑤a 由编排器在 phase 3 内先行确认）；
  *   - ⑦b（接口定义生成）与 ⑦c（接口人工验收）已合并为单一内部 phase 6；
  *   - 双向映射集中在本模块，避免散落不一致。
  *
@@ -16,14 +17,32 @@
 
 const fs = require('fs')
 const path = require('path')
+const { execSync } = require('child_process')
 
 // ─── 路径常量 ──────────────────────────────────────────────────
 
-/** 项目根目录 */
-const PROJECT_ROOT = process.env.CODEBUDDY_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.cwd()
+/** 项目根目录（自动解析：宿主环境变量 → git 根 → cwd） */
+/**
+ * 解析项目根目录：
+ * 宿主环境变量（CodeBuddy/Claude）→ 可选 FW_PROJECT_DIR → git 根目录兜底 → cwd
+ */
+function resolveProjectRoot () {
+  const env = process.env.CODDEBUDDY_PROJECT_DIR || process.env.CLAUDE_PROJECT_DIR || process.env.FW_PROJECT_DIR
+  if (env) return path.resolve(env)
+  const cwd = process.cwd()
+  try {
+    const out = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 }).trim()
+    if (out) return out
+  } catch (e) { /* 非 git 仓库或 git 不可用时回退 cwd */ }
+  return cwd
+}
+
+const PROJECT_ROOT = resolveProjectRoot()
 
 /** plans 目录（状态文件与编排类产物所在） */
-const PLANS_DIR = path.join(PROJECT_ROOT, '.codebuddy', 'plans')
+const PLANS_DIR = process.env.FW_STATE_DIR
+  ? path.resolve(process.env.FW_STATE_DIR)
+  : path.join(PROJECT_ROOT, '.codebuddy', 'plans')
 
 // ─── Phase 定义 ─────────────────────────────────────────────────
 
@@ -31,13 +50,14 @@ const PLANS_DIR = path.join(PROJECT_ROOT, '.codebuddy', 'plans')
  * 内部 phase（0~10）→ slug
  * 对应编排协议 §三 的映射表
  * 注：⑦b（接口定义生成）与 ⑦c（接口人工验收）已合并为单一 phase 6，
- *    以 gate 型 apiConfirmed 作为校验项，与 ⑤a⑤ 的合并策略一致。
+ * 以 gate 型 apiConfirmed 作为校验项；⑤a（业务文档方案确认）由编排器在
+ * phase 3 内先行与用户确认，不单独占 phase。
  */
 const PHASE_SLUGS = [
   'gen_static',    // 0  = ② 生成静态页面
   'review_static', // 1  = ③ 检查
   'gate_static',   // 2  = ④ 人工 Gate
-  'gen_prd',       // 3  = ⑤a⑤ 业务文档生成
+  'gen_prd',       // 3  = ⑤ 业务文档生成（⑤a 由编排器先行确认）
   'review_prd',    // 4  = ⑥ 检查
   'gate_prd',      // 5  = ⑦ 人工 Gate
   'gen_api',       // 6  = ⑦b⑦c 接口定义生成+人工验收（合并）
@@ -49,7 +69,7 @@ const PHASE_SLUGS = [
 
 /** 内部 phase → 展示编号 */
 const PHASE_DISPLAY = [
-  '②', '③', '④', '⑤a⑤', '⑥', '⑦', '⑦b⑦c', '⑧a⑧⑨', '⑩', '⑪', '⑫'
+  '②', '③', '④', '⑤', '⑥', '⑦', '⑦b⑦c', '⑧a⑧⑨', '⑩', '⑪', '⑫'
 ]
 
 /** 内部 phase → 中文名称 */
@@ -231,20 +251,6 @@ function getUnresolvedConfirmations (state) {
   return state.pendingConfirmations.filter(p => !p.resolved)
 }
 
-// ─── stdin 读取（Windows 兼容） ─────────────────────────────────
-
-function readStdin () {
-  try {
-    const buf = Buffer.alloc(65536)
-    const fd = fs.openSync(process.stdin.fd, 'r')
-    const bytesRead = fs.readSync(fd, buf, 0, 65536, null)
-    fs.closeSync(fd)
-    return bytesRead > 0 ? buf.toString('utf-8', 0, bytesRead) : ''
-  } catch (e) {
-    return ''
-  }
-}
-
 // ─── 导出 ───────────────────────────────────────────────────────
 
 module.exports = {
@@ -270,6 +276,5 @@ module.exports = {
   isPhaseCompleted,
 
   checkPhaseArtifact,
-  getUnresolvedConfirmations,
-  readStdin
+  getUnresolvedConfirmations
 }

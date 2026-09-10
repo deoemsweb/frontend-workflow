@@ -22,6 +22,9 @@ const {
   getStateFilePath,
   getPhaseKey,
   getPhaseSlug,
+  getPhaseAgent,
+  getPhaseName,
+  getPhaseDisplay,
   TOTAL_PHASES
 } = require('./workflow-state-utils.cjs')
 
@@ -54,6 +57,11 @@ if (isNaN(startPhase) || startPhase < 0 || startPhase >= TOTAL_PHASES) {
 
 const title = getOpt('--title') || taskName
 const bizDoc = getOpt('--biz-doc') || null
+
+if (bizDoc && !['openspec', 'fw-dev-spec', 'skip'].includes(bizDoc)) {
+  console.error(`--biz-doc 无效："${bizDoc}"，可选值：openspec | fw-dev-spec | skip`)
+  process.exit(1)
+}
 
 // ─── 主逻辑 ─────────────────────────────────────────────────────
 
@@ -113,8 +121,6 @@ try {
   console.error(JSON.stringify({ success: false, error: `写入状态文件失败: ${e.message}` }, null, 2))
   process.exit(1)
 }
-
-const { getPhaseAgent, getPhaseName, getPhaseDisplay } = require('./workflow-state-utils.cjs')
 
 console.log(JSON.stringify({
   success: true,

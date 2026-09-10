@@ -6,6 +6,8 @@
  *   1. 状态文件存在且可解析
  *   2. 所有前置 phase 已 completed（或 skipped）
  *   3. 目标 phase 的前置"标志产物"齐全（文件/目录/gateChecks）
+ *      —— 人工 Gate（gate 类）的前置 gateChecks 必须为 true（由 set-fw-gate.cjs 置位），
+ *         未经用户确认不得离开 Gate 阶段
  *   4. pendingConfirmations 全部 resolved
  *
  * 用法:
@@ -24,6 +26,7 @@ const {
   getPhaseDisplay,
   checkPhaseArtifact,
   getUnresolvedConfirmations,
+  PHASE_ARTIFACTS,
   TOTAL_PHASES
 } = require('./workflow-state-utils.cjs')
 
@@ -67,6 +70,17 @@ if (!state) {
     // 跳过被显式标记为 skipped 的前置 phase（如 --start 场景下的跳过阶段），
     // 其产物/人工验收本就无需产出，不应误阻断推进
     if (state.phases?.[getPhaseKey(p)]?.status === 'skipped') continue
+    // biz-doc=skip 场景：跳过业务文档目录产物校验（⑤a 已确认不产出业务文档）
+    if (p === 3 && state.bizDocPlan === 'skip' && PHASE_ARTIFACTS[p]?.type === 'dir') continue
+    // 人工 Gate（gate 类 phase，④⑦⑦b⑦c⑪ 等）：离开前必须已获用户确认。
+    // 置位由编排器在用户确认后调用 set-fw-gate.cjs 完成，advance 不再自动置位。
+    if (PHASE_ARTIFACTS[p]?.type === 'gate') {
+      const gateKey = PHASE_ARTIFACTS[p].gateKey
+      if (state.gateChecks?.[gateKey] !== true) {
+        blockers.push(`前置人工 Gate phase ${p}（${getPhaseDisplay(p)} ${getPhaseName(p)}）未获用户确认：gateChecks.${gateKey}≠true（请先调用 node scripts/set-fw-gate.cjs <任务名> ${gateKey}）`)
+      }
+      continue
+    }
     const r = checkPhaseArtifact(taskName, p, state)
     if (!r.pass) {
       blockers.push(`phase ${p}（${getPhaseDisplay(p)} ${getPhaseName(p)}）产物未就绪: ${r.description}` + (r.detail ? ` → ${r.detail}` : ''))
@@ -82,12 +96,12 @@ if (!state) {
     )
   }
 
-  // 4. 目标本身是人工 Gate：提示需对应 gateChecks 已置位（由编排器在用户确认后写回）
+  // 4. 目标本身是人工 Gate：提示需对应用户确认并置位（由编排器调用 set-fw-gate.cjs 完成）
   const gateArt = require('./workflow-state-utils.cjs').PHASE_ARTIFACTS[targetPhase]
   if (gateArt && gateArt.type === 'gate') {
     const ok = state.gateChecks?.[gateArt.gateKey] === true
     if (!ok) {
-      warnings.push(`目标 phase ${targetPhase} 是人工 Gate（${gateArt.description}），需先获用户确认并将 gateChecks.${gateArt.gateKey} 置为 true`)
+      warnings.push(`目标 phase ${targetPhase} 是人工 Gate（${gateArt.description}），获用户确认后需调用 node scripts/set-fw-gate.cjs <任务名> ${gateArt.gateKey} 置位，再 advance 离开本 Gate`)
     }
   }
 }

@@ -1,10 +1,10 @@
 # Swagger / OpenAPI → 前端接口定义自动生成
 
-此 skill 把后端提供的 Swagger / OpenAPI（`open.json` / `swagger.json`）接口文档，**结合当前前端项目已有的技术栈与接口定义模式**，自动生成（或增量更新）前端项目中的接口定义文件。它处于前端工作流的「接口契约接入」环节，产出物供 `frontend-engineering-standards`（请求调用 / 三态 / 防竞态）与 `figma-design-constraint`（数据字段还原）衔接。
+本规则集把后端提供的 Swagger / OpenAPI（`open.json` / `swagger.json`）接口文档，**结合当前前端项目已有的技术栈与接口定义模式**，自动生成（或增量更新）前端项目中的接口定义文件。它处于前端工作流的「接口契约接入」环节，产出物供 `references/frontend-engineering-standards.md`（请求调用 / 三态 / 防竞态）与 `references/figma-design-constraint.md`（数据字段还原）衔接。
 
-## 何时使用此 Skill
+## 何时使用本规则集
 
-当用户请求以下任一操作时，触发此 skill：
+当用户请求以下任一操作时，触发本规则集：
 
 - 根据 Swagger / open.json / swagger.json 生成接口定义 / API 文件 / model
 - 把接口文档转成前端接口方法 / 请求函数
@@ -12,7 +12,7 @@
 - 接口文档更新后增量同步前端接口定义
 - 批量生成 API 模块 / 按业务模块归类接口
 
-> 本 skill 聚焦「接口定义的生成与同步」，**不**实现业务调用逻辑（三态 / 防竞态 / Composable 由 `frontend-engineering-standards` 第二章负责），**不**做需求拆解（那是 `prototype-to-openspec-prd` 的职责）。当 Swagger 缺失关键字段时**停止并询问**，严禁猜测接口契约。
+> 本规则集聚焦「接口定义的生成与同步」，**不**实现业务调用逻辑（三态 / 防竞态 / Composable 由 `references/frontend-engineering-standards.md` 第二章负责），**不**做需求拆解（那是 `references/prototype-to-openspec-prd.md` 的职责）。当 Swagger 缺失关键字段时**停止并询问**，严禁猜测接口契约。
 
 ---
 
@@ -338,15 +338,15 @@ Swagger 已移除（1）：
 
 协作约定：
 
-- 与 `prototype-to-openspec-prd` **不重叠**：后者管「需求与规范」，本 skill 管「接口定义代码生成」。PRD 中标注的接口契约可作为本 skill 的补充输入。
-- 与 `frontend-engineering-standards` **不重叠**：后者管「请求调用规范」（三态/防竞态/错误码），本 skill 只生成「接口定义本身」（函数 + 类型 + 注释），不实现业务调用逻辑。
-- 与 `figma-design-constraint` **互补**：设计稿中的数据字段（列表/表格列）应与本 skill 生成的出参类型字段对齐；字段不一致时以 Swagger 契约为准并标注差异。
+- 与 `references/prototype-to-openspec-prd.md` **不重叠**：后者管「需求与规范」，本规则集管「接口定义代码生成」。PRD 中标注的接口契约可作为本规则集的补充输入。
+- 与 `references/frontend-engineering-standards.md` **不重叠**：后者管「请求调用规范」（三态/防竞态/错误码），本规则集只生成「接口定义本身」（函数 + 类型 + 注释），不实现业务调用逻辑。
+- 与 `references/figma-design-constraint.md` **互补**：设计稿中的数据字段（列表/表格列）应与本规则集生成的出参类型字段对齐；字段不一致时以 Swagger 契约为准并标注差异。
 
 ---
 
-## 十、生成后人工 Gate
+## 十、生成后人工 Gate（对应主流程 ⑦c，gateChecks.apiConfirmed）
 
-生成完成后，必须暂停并提示用户验收：
+生成完成后，必须暂停并提示用户验收（多 agent 模式下由编排器经 `set-fw-gate.cjs` 置位 `apiConfirmed` 后 advance 离开 phase 6）：
 
 ```
 【人工 Gate · 接口定义生成】

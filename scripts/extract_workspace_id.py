@@ -46,6 +46,12 @@ def extract_workspace_id(entity_id: str) -> str:
             f"ID 前缀不符（期望以 '11' 开头）：{entity_id}"
         )
 
+    # 分隔段校验：索引 10-11 应为 "00"（11 + 8位workspace_id + 00 + 序列号）
+    if entity_id[10:12] != "00":
+        raise ValueError(
+            f"ID 分隔段不符（期望索引 10-11 为 '00'，实际 '{entity_id[10:12]}'）：{entity_id}"
+        )
+
     # 提取索引 2-9 共 8 位（第 3-10 个字符，1-indexed）
     workspace_id = entity_id[2:10]
 
