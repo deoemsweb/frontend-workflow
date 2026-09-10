@@ -1,7 +1,7 @@
 ---
 name: frontend-workflow
-version: 1.1.0
-description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级还原、Figma 原型转 OpenSpec PRD、前端工程通用规范（类型安全/API/状态/安全/性能）、Swagger 接口定义生成、测试能力（待扩展）、TAPD 缺陷修复全流程、开发计划活文档（fw_dev_spec）生成，以及多 agent 编排（状态机门控 / 阶段推进与回退）。当用户要求 Figma 还原、设计稿转代码、高保真还原、切图、Figma→OpenSpec PRD、生成需求文档、前端工程规范、类型/API/状态/安全、端到端还原设计稿并实现业务、按前端工作流开发、写单测/组件测试/E2E、TAPD 缺陷修复、修复 bug、缺陷修复、tapd bugfix、需求关联缺陷、批量修 bug、开发计划活文档、fw_dev_spec、dev spec、原型转开发计划、原型转活文档、需求开发计划、多 agent 编排、工作流返工/阶段回退、技能提示词模板、活文档关联 OpenSpec、活文档同步 OpenSpec、初始化 OpenSpec 关联、fw-dev-spec 同步 OpenSpec 时使用此 skill。
+version: 1.3.0
+description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级还原、Figma 原型转 OpenSpec PRD、前端工程通用规范（类型安全/API/状态/安全/性能）、Swagger 接口定义生成、测试与测试用例生成（两段式用例文档→人工Gate→可执行代码，Playwright E2E / 单元 / 组件 / 视觉回归）、TAPD 缺陷修复全流程、开发计划活文档（fw_dev_spec）生成，以及多 agent 编排（状态机门控 / 阶段推进与回退）。当用户要求 Figma 还原、设计稿转代码、高保真还原、切图、Figma→OpenSpec PRD、生成需求文档、前端工程规范、类型/API/状态/安全、端到端还原设计稿并实现业务、按前端工作流开发、写单测/组件测试/E2E/视觉回归、生成测试用例、自动化测试、TAPD 缺陷修复、修复 bug、缺陷修复、tapd bugfix、需求关联缺陷、批量修 bug、开发计划活文档、fw_dev_spec、dev spec、原型转开发计划、原型转活文档、需求开发计划、多 agent 编排、工作流返工/阶段回退、技能提示词模板、活文档关联 OpenSpec、活文档同步 OpenSpec、初始化 OpenSpec 关联、fw-dev-spec 同步 OpenSpec、需求拷问、追问澄清、澄清需求、grill、grilling 时使用此 skill。
 ---
 
 # 前端开发工作流（统一 Skill）
@@ -23,8 +23,8 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 - **原型文档→PRD 类**：根据 `.md` 格式原型需求文档 / PRD 草稿生成 OpenSpec 规范 / 把 .md 需求文档规范化为 OpenSpec / 需求拆解为 specs 与 tasks
 - **工程规范类**：编写/重构前端代码、集成 API、状态管理、前端安全、性能优化、代码注释、AI 不确定时处理
 - **接口定义生成类**：根据 Swagger / open.json / swagger.json 生成接口定义、接口文档转前端 API 方法、OpenAPI 转 TypeScript interface / JSDoc 类型、接口文档增量同步
-- **测试类**：写单元测试 / 组件测试 / E2E / 视觉回归（见 `references/testing.md`，待扩展）
-- **缺陷修复类**：TAPD 缺陷修复 / 修复 bug / 缺陷修复 / tapd bugfix / 需求关联缺陷 / 批量修 bug（独立分支，见 `references/tapd-bugfix-workflow.md`，不进入下列 12 阶段主流程）
+- **测试类**：写单元测试 / 组件测试 / E2E / 视觉回归、生成测试用例（见 `references/testing.md`，两段式：用例文档→人工 Gate→可执行代码；E2E 走 `scripts/testing/` Playwright 执行层）
+- **缺陷修复类**：TAPD 缺陷修复 / 修复 bug / 缺陷修复 / tapd bugfix / 需求关联缺陷 / 批量修 bug（独立分支，见 `references/tapd-bugfix-workflow.md`，不进入下列 ②~⑫ 主流程）
 - **开发计划活文档类**：开发计划活文档 / fw_dev_spec / dev spec / 原型转开发计划 / 原型转活文档 / 需求开发计划（独立分支，见 `references/fw-dev-spec.md`；是「原型→OpenSpec PRD」的可切换替代方案，产出本地活文档供 ⑧⑨ 实现使用，默认不写 OpenSpec 文件）；可选「OpenSpec 关联模式」开启后单向同步到 OpenSpec 并建立双向锚点（见 fw-dev-spec.md 第九章）
 - **端到端类**：从 Figma 生成完整页面（含业务逻辑）、按前端工作流开发、端到端还原设计稿并实现业务绑定
 
@@ -38,7 +38,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 - `单Agent模式/`：01-Figma还原 ~ 10-活文档关联OpenSpec 共 10 个模板（10 为 3.7 的可选 OpenSpec 关联增强），每个含「完整版 + 精简版 + 占位符说明」
 - `多Agent模式/`：与单 Agent 模板一一对应的 9 个多 agent 编排提示词（01~09-多Agent）+ README，粘贴即触发编排器调度
 
-单 Agent 模板开头追加「用多 agent / 团队协作模式」即可切换到多 Agent 调度。
+单 Agent 模板开头追加「用多 agent / 团队协作模式」即可切换到多 Agent 调度（端到端 08 模板默认即多 agent，无需追加）。
 
 ### 1.2 项目适配用法文档
 
@@ -48,9 +48,9 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 ## 二、统一调度路由
 
-### 2.1 第一件事：解读用户意图
+### 2.1 第一件事：解读用户意图（按 grilling 追问协议）
 
-收到请求后先判断任务边界，输出**意图清单**供用户确认：
+收到请求后先判断任务边界。**可自查的事实先自查**（技术栈/目录/既有依赖/业务文档存在性等，见 `references/grilling.md` 第五章），再输出**意图清单**供用户确认：
 
 | 判断维度 | 说明 |
 |---------|------|
@@ -60,7 +60,7 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 | 起止阶段 | 从哪个环节开始（如已有静态页面则跳过②③）、到哪个环节结束 |
 | 技术栈 | Vue2 / Vue3 / React / 原生 / 小程序（决定各 reference 的输出语法） |
 
-意图不明确时**停止并询问**，不自行假设起止点。
+意图不明确时**按 `references/grilling.md` 全局追问协议执行**：以待决维度为设计树起点，按 Frontier 轮次一次性提问（❓ 逐题编号 + ➡️ 每题附推荐答案），每轮 ≤4 问、同一决策点最多追问 2 轮；frontier 清空（无默默假设）并获用户确认后才进入阶段调度，不自行假设起止点。
 
 ### 2.2 第二件事：按阶段调度（读取对应 reference）
 
@@ -85,10 +85,11 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 > 阶段顺序固定；如需跳过某阶段（如已有静态页面），须在意图解读阶段与用户确认后记录。各 reference 仍可独立读取使用（不经过本路由）。
 
-### 2.2b 独立分支（不进入 12 阶段主流程）
+### 2.2b 独立分支（不进入 ②~⑫ 主流程）
 
 部分能力是独立的生命周期（如 **3.6 TAPD 缺陷修复**、**3.7 开发计划活文档**），与「设计稿→PRD→实现」主流程无顺序耦合。命中此类分支时**不套用上表 ②~⑫**，而是直接 `Read` 对应 reference 按其内部阶段执行：
 - **3.6 TAPD 缺陷修复**：`Read` `references/tapd-bugfix-workflow.md`；内部「前端代码修复」步骤复用 3.3 工程规范（UI 类加 3.1 视觉约束）；自带人工 Gate（缺陷筛选确认、验证后更新状态）。
+- **3.5 测试与用例生成（可选环节，正式规则）**：`Read` `references/testing.md`；可插在 ⑨→⑩ 之间由 `test-engineer` 执行（生成业务逻辑后、终验前）。采用**两段式**：先从业务文档（OpenSpec Scenario / fw_dev_spec 活文档）生成 Markdown 测试用例文档，经**内嵌人工 Gate（用例审阅）**确认后再生成可执行测试代码（E2E 走 `scripts/testing/` 的 Playwright 执行层）。"测试通过"等完成断言一律受 `references/cross-cutting.md` 三（完成前验证铁律）约束。
 - **3.7 开发计划活文档**：`Read` `references/fw-dev-spec.md`；是 3.2 OpenSpec PRD 的**可切换替代**，把 Figma / `.md` 原型转为项目根 `fw_dev_spec/<需求名-日期>/` 下的分层活文档（原型放子目录根、活文档放 `specs/`），默认不写 OpenSpec 文件；产出的活文档经 3.3 第〇章（业务文档接入与前置编排）被探测并确认为 ⑧⑨ 的需求依据；自带人工 Gate（Figma→.md 原型审阅、目录新建确认、组织形式单文档/多文档选择）；可选新增「OpenSpec 关联 Gate」（fw-dev-spec.md 第九章）：用户确认后单向同步到 OpenSpec 并建立双向锚点。
 
 ### 2.2c 多 agent 编排（可选模式）
@@ -97,12 +98,13 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 1. **编排器角色**：由 `workflow-orchestrator`（见 `.agents/workflow-orchestrator.md`）承担，对应本 skill 三职责。编排器**不亲自写生成类代码**，只做 dispatch、人工 Gate 管理、状态推进与敏感操作统一询问。
 2. **初始化工作流**：确认启用后调用 `node scripts/create-fw-workflow.cjs <任务名> [--start <内部phase>] [--title "..."] [--biz-doc <openspec|fw-dev-spec|skip>]` 创建状态文件（`.codebuddy/plans/<任务名>-fw-state.json`），脚本返回 `nextAgent`。`--start` 之前的阶段标记为 `skipped`，在 validate/advance 时**不校验其产物**；`--biz-doc` 把业务文档方案预选写入状态文件供下游读取。
-3. **按阶段 spawn**：用 Task 工具 spawn 2.2 表「负责 Agent」列的 `.agents/` 角色；dispatch 提示词用编排协议 §八 模板（含任务上下文、必读 reference、输入、交付物、横切安全约束、敏感操作上报）。
-4. **门控推进**：每阶段产物就绪且人工 Gate 通过后，调用 `node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>` 推进；脚本内置门控校验（产出物/前置阶段/待确认项/gateChecks），失败不得强行推进。推进前可单独用 `node scripts/validate-fw-phase-gate.cjs <任务名> <目标phase>` 预检。
-5. **阶段回退（返工）**：人工 Gate 判定 [返工] 时，调用 `node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>` 回退状态机（仅允许后向回退：目标 phase < 当前 phase）；回退区间内的阶段重置为 pending、目标阶段置 running，**已完成阶段的产物文件不删除**，脚本返回 `nextAgent`（见编排协议 §9.6）。
-6. **人工 Gate 置位**：获用户确认后，将状态文件对应 `gateChecks`（`staticConfirmed/docConfirmed/apiConfirmed/bizConfirmed`）置 `true`，门控才放行后续生成阶段。状态文件另有 `pendingConfirmations[]`（`{id, question, resolved, source}`）记录待确认项，存在未 `resolved` 项时门控同样阻断推进。
+3. **按阶段 spawn**：用 Task/subagent 工具（按宿主环境映射，见编排协议 §8.1）spawn 2.2 表「负责 Agent」列的 `.agents/` 角色；dispatch 提示词用编排协议 §八 模板（含任务上下文、必读 reference、输入、交付物、横切安全约束、敏感操作上报）。
+4. **门控推进**：每阶段产物就绪且人工 Gate 通过后，调用 `node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>` 推进；脚本内置门控校验（产出物/前置阶段/待确认项/gateChecks），失败不得强行推进。**advance 不自动置位人工 Gate**；离开 Gate 阶段前必须已完成 6 步置位。推进前可单独用 `node scripts/validate-fw-phase-gate.cjs <任务名> <目标phase>` 预检。
+5. **阶段回退（返工）**：人工 Gate 判定 [返工] 时，调用 `node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>` 回退状态机（仅允许后向回退：目标 phase < 当前 phase，且**不可指向 skipped 阶段**）；回退区间内的阶段重置为 pending、目标阶段置 running，**已完成阶段的产物文件不删除**，回流计数清零，脚本返回 `nextAgent`（见编排协议 §9.6）。
+6. **人工 Gate 置位**：获用户确认后，调用 `node scripts/set-fw-gate.cjs <任务名> <gateKey>`（`staticConfirmed/docConfirmed/apiConfirmed/bizConfirmed`）显式置位；`validate` 强校验「离开 Gate 前 gateChecks 已为 true」，未置位推进会被阻断。状态文件另有 `pendingConfirmations[]`（`{id, question, options, recommendation, resolved, source}`，grilling 语义 schema）记录待确认项——执行 agent 的不确定点按 `references/grilling.md` 第五、六章上报编排器，由编排器凑满一轮 frontier 后统一按「❓+➡️推荐答案」格式问用户；存在未 `resolved` 项时门控同样阻断推进。
 7. **只读检查**：③⑥⑩ 由 `qa-reviewer` 执行，只读不写，产出结构化偏差报告；回流上限 3 次，超出转人工介入。
-8. **敏感操作**：git/删除/批量替换/TAPD 写操作/npm 脚本/部署等，任何 agent 执行前必须上报编排器，由编排器统一向用户询问（见编排协议 §六）。
+8. **敏感操作**：git/删除/批量替换/TAPD 写操作/npm 脚本/部署等，任何 agent 执行前必须上报编排器，由编排器统一向用户询问（见编排协议 §六与 `references/cross-cutting.md`）。
+9. **阶段跳过与提前完成**：⑤a 选择「跳过业务文档」（`--biz-doc skip`）后，用 `node scripts/skip-fw-phase.cjs <任务名> 3 4 5` 跳过 ⑤⑥⑦；仅需部分阶段的任务（如接口-only）完成后用 `node scripts/finish-fw-workflow.cjs <任务名>` 提前收尾，避免状态文件永久 running。
 
 > 状态机内部用顺序整数 phase（0~10）存储，与展示编号 ②~⑫ 的双向映射集中在 `scripts/workflow-state-utils.cjs`（⑦b⑦c 已合并为单一 phase 6）。
 
@@ -122,17 +124,18 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 
 **回流次数上限**：每个检查阶段最多回流 3 次；第 3 次仍未通过则标记「人工介入」，停止自动循环。
 
-**人工 Gate 提示**：到达确认环节（④⑤a⑦⑦b⑦c⑧a⑪⑫；其中 ⑤a/⑧a 为所在阶段的**内嵌 Gate**，非独立 phase）必须暂停并提示用户：
+**人工 Gate 提示**：到达确认环节（④⑤a⑦⑦c⑧a⑪⑫；其中 ⑤a/⑧a 为所在阶段的**内嵌 Gate**、⑦b「模式确认」为 ⑦b 内嵌 Gate，均非独立 phase）必须暂停并提示用户：
 
 ```
 【人工 Gate · 阶段 X】
 - 当前阶段：<阶段名>
 - 待确认产物：<文件 / 页面 / 文档>
 - 检查结论：<通过 / 人工介入 / 偏差清单摘要>
+- 建议：➡️ <推荐结论及理由>（按 references/grilling.md 三）
 - 请确认：[通过] / [返工] / [调整范围]
 ```
 
-未经用户确认，不得进入下一阶段。用户选择 **[返工]** 时：单 agent 模式回到对应生成阶段重做；多 agent 模式**必须**调用 `node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>` 形式化回退状态机后再重新 dispatch，不得仅口头返工。
+「建议」字段由编排器/角色基于已探查事实给出推荐结论，用户可零修改确认。未经用户确认，不得进入下一阶段。用户选择 **[返工]** 时：单 agent 模式回到对应生成阶段重做；多 agent 模式**必须**调用 `node scripts/rollback-fw-phase.cjs <任务名> <目标内部phase>` 形式化回退状态机后再重新 dispatch，不得仅口头返工。
 
 ### 2.4 上下文传递规范
 
@@ -165,15 +168,15 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
 命中对应分支时，**先 `Read` 该文件再执行**；各文件内含完整章节、QA Checklist 与质量校验清单。
 
 - **3.1 Figma 还原约束** → `references/figma-design-constraint.md`
-  - 核心规则 / Design Token / 节点映射 / 精确测量 / a11y / 代码组织 / 资源导出 / 组件库共存 / Dev Mode / QA Checklist / 边界情况 / 技术栈与项目类型适配 / 工作流 / 错误示例
+  - 核心规则 / 〇 Figma 数据获取（优先 MCP）/ Design Token / 节点映射 / 精确测量 / a11y / 代码组织 / 资源导出 / 组件库共存 / Dev Mode / QA Checklist（第十章）/ 边界情况 / 技术栈判断（十二章）/ 项目类型判断（十三章）/ 工作流 / 错误示例
 - **3.2 原型（Figma / .md）→ OpenSpec PRD** → `references/prototype-to-openspec-prd.md`
   - 输入源判定（Figma 或 .md）/ Figma 读取 / .md 原型文档读取与结构映射 / 需求分析要素 / OpenSpec 环境检查 / 文档结构写法 / PRD 生成 / 变更更新 / 拆解策略 / 质量校验清单 / 协作关系 / 边界与不确定处理
 - **3.3 前端工程通用规范** → `references/frontend-engineering-standards.md`
   - 第〇章 业务文档接入与前置编排（根目录标准探测 / 业务文档方案推荐与询问 / 无文档转交 02/03/04 / 页面路由校验 / 衔接⑧⑨⑩）→ 类型安全 / API 集成 / 状态管理 / 安全约束 / 性能优化 / 注释文档 / AI 不确定时处理协议
 - **3.4 Swagger → 接口定义生成** → `references/api-definition-generation.md`
-  - Swagger 解析 / 项目既有模式自动探测 / 模式画像确认 / 生成规则（命名/注释/类型/模块归类）/ 多技术栈适配 / 增量更新与冲突处理 / 鉴权与拦截器 / 质量校验清单 / 边界与不确定处理 / 协作关系
-- **3.5 测试能力（待扩展）** → `references/testing.md`
-  - 单元 / 组件 / E2E / 视觉回归 骨架占位，正式规则待补充
+  - Swagger 解析 / 项目既有模式自动探测 / 模式画像确认 / 生成规则（命名/注释/类型/模块归类）/ 多技术栈适配 / 增量更新与冲突处理 / 鉴权与拦截器 / 质量校验清单 / 边界与不确定处理 / 协作关系 / 生成后人工 Gate（对应主流程 ⑦c）
+- **3.5 测试与用例生成（可选环节）** → `references/testing.md`
+  - 测试策略与工具选型 / 测试用例生成两段式（业务文档→用例文档→人工 Gate→可执行代码）/ 单元 / 组件 / E2E（Playwright 执行层 `scripts/testing/`）/ 视觉回归 / 完成前验证铁律指针 / QA Checklist / 边界情况；定位为**主流程可选环节**（插在 ⑨→⑩ 之间，由 test-engineer 执行）
 - **3.6 TAPD 缺陷修复（独立分支）** → `references/tapd-bugfix-workflow.md`
   - 阶段零（MCP 连通性探针）+ 5 主阶段：提取 workspace_id（`scripts/extract_workspace_id.py`）/ 读取筛选缺陷（`references/tapd-tool-params.md`）/ 生成活文档计划（`references/tapd-plan-template.md` + `references/tapd-grouping-rules.md`）/ 执行修复与发评论 / 验证后更新状态
   - 4.1 前端代码修复复用 `references/frontend-engineering-standards.md`（UI 类 Bug 加 `references/figma-design-constraint.md`），继承安全硬约束与工程规范
@@ -183,10 +186,13 @@ description: 统一前端开发工作流 skill：覆盖 Figma 设计稿像素级
   - 统一输出五模块：当前项目说明 / 需求功能模块设计（含原需求原型关联锚点）/ 分步开发计划 / 整体进度记录 / 变更日志；单文档或多 spec 文档按需求大小询问用户
   - 可选「OpenSpec 关联模式」见第九章（单向同步 + 双向锚点 + 活文档同步钩子 `scripts/sync-fw-openspec.cjs` 的 init/sync/check）
 - **3.8 多 agent 编排协议（编排层，可选模式）** → `references/multi-agent-orchestration.md`
-  - 8 个 `.agents/` 角色清单与职责边界 / 阶段↔agent↔reference↔产物映射 / agent 间上下文传递 schema / 产出物命名约定 / 状态机脚本（create/validate/advance/rollback）使用说明 / §9.6 阶段回退（返工）协议 / 敏感操作统一询问清单 / dispatch 提示词模板 / 只读约束与回流上限
-  - 角色定义见 `.agents/`：`workflow-orchestrator`（编排器）、`figma-restorer`（②）、`prd-analyst`（⑤）、`api-contractor`（⑦b⑦c）、`frontend-implementer`（⑧⑨）、`qa-reviewer`（③⑥⑩只读）、`tapd-bugfixer`（3.6）、`test-engineer`（3.5 占位）
+  - 8 个 `.agents/` 角色清单与职责边界 / 阶段↔agent↔reference↔产物映射 / agent 间上下文传递 schema / 产出物命名约定 / 状态机脚本（create/validate/advance/rollback/set-fw-gate/skip-fw-phase/finish，冒烟测试 smoke-fw-scripts.cjs）使用说明 / §9.6 阶段回退（返工）协议 / 敏感操作统一询问清单 / dispatch 提示词模板 / 只读约束与回流上限
+  - 角色定义见 `.agents/`：`workflow-orchestrator`（编排器）、`figma-restorer`（②）、`prd-analyst`（⑤，⑤a 由编排器先行确认）、`api-contractor`（⑦b⑦c）、`frontend-implementer`（⑧a⑧⑨）、`qa-reviewer`（③⑥⑩只读）、`tapd-bugfixer`（3.6）、`test-engineer`（3.5 可选环节，测试与用例生成两段式）
+  - 横切安全硬约束与敏感操作统一清单 → `references/cross-cutting.md`（各角色文件与编排协议共享引用，避免多份拷贝漂移）
 - **3.9 提示词模板与项目适配（用户侧入口）** → `技能使用提示词模板/README.md` + `frontend-workflow-usage.md`
   - `单Agent模式/`（01~10 共 10 个模板，含 10-活文档关联OpenSpec）与 `多Agent模式/`（01~09-多Agent 共 9 个模板 + README；10 号无独立多 Agent 模板，其多 agent 执行复用 `prd-analyst` 说明，见 `技能使用提示词模板/单Agent模式/10-活文档关联OpenSpec.md`），替换 `{{...}}` 占位符即可粘贴触发（见 1.1）
   - `frontend-workflow-usage.md`：具体项目技术栈适配手册（Vue3+TS 默认写法 → Vue2+JS 映射、各分支使用要点、生成后检查清单，见 1.2）
+- **3.10 全局追问协议 grilling（横切询问协议）** → `references/grilling.md`
+  - 何时触发 / 设计树与 Frontier 轮次机制 / 轮次格式规范（❓逐题编号 + ➡️每题推荐答案）/ 收敛护栏（每轮 ≤4 问、同点 ≤2 轮、超限降级假设清单）/ 职责分离（事实自查 vs 决策归用户）/ 工作流接入点清单（2.1 意图解读、2.3 Gate、各内嵌 Gate、角色不确定上报、边界不确定处理）；触发词：需求拷问、追问澄清、grill、澄清需求
 
 > 关系：3.2 是上游 PRD 产出（specs/tasks）；3.4（接口定义生成）是 PRD 与实现之间的「接口契约接入」桥梁，依据 Swagger 生成接口函数/类型供下游调用；3.1 与 3.3 是下游实现（视觉还原 + 工程规范）；3.6（缺陷修复）是独立的「开发后维护」生命周期分支，不进入 ②~⑫ 主流程，但其前端代码修复步骤复用 3.3 工程规范（UI 类加 3.1），并借助 `.bugfix-workflow/` 活文档实现中断恢复。各分支共享同一 Figma / Swagger / TAPD 数据源但产物不同、互不重叠。

@@ -2,6 +2,8 @@
 
 阶段三生成修复计划时使用此模板。写入路径为项目根目录下的 `.bugfix-workflow/bugfix-plan-YYYY-MM-DD.md`，写入前确保 `.bugfix-workflow/` 目录存在。
 
+> **占位符取值说明**：`{tapd_base_url}` 为 TAPD 站点域名（如 `https://www.tapd.cn` 或公司私有化部署域名，不带结尾斜杠），TAPD 链接统一拼接为 `{tapd_base_url}/{workspace_id}/bugtrace/bugs/view/{id}`；`{workspace_id}` 由阶段一从实体 ID 提取，`{story_id}` 为输入参数中的需求 ID。
+
 ## 活文档机制
 
 本模板采用活文档（Living Document）模式：Agent 在修复过程中实时更新文档中的状态标记，中断后可从此文档恢复进度。

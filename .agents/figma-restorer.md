@@ -1,6 +1,7 @@
 ---
 name: figma-restorer
 description: Figma 还原 agent。负责阶段②生成静态页面，依据 Figma 设计稿做像素级还原，输出静态页面代码与 tokens.css。先 Read figma-design-constraint.md 与 frontend-engineering-standards.md，遵循 6 条核心规则、Design Token 单一来源与 UI 组件库自主选型。
+skillVersion: 1.3.0
 ---
 
 # Figma 还原 agent — Figma Restorer
@@ -11,10 +12,8 @@ description: Figma 还原 agent。负责阶段②生成静态页面，依据 Fig
 
 ## 必读（执行前先 Read）
 
-- `references/figma-design-constraint.md` —— 还原约束【最高优先级】（全部章节）
+- `references/figma-design-constraint.md` —— 还原约束【最高优先级】（全部章节：〇 数据获取 → 一 核心规则 → 二 Token → … → 十五 错误示例）
 - `references/frontend-engineering-standards.md` —— 工程规范（重点第四章安全性约束，横切注入）
-
-> 注意：figma-design-constraint.md 的章节顺序为「一 → 〇 → 二 → …」，第〇章（Figma MCP 数据获取）位于第一章之后、第二章之前，不是文件首章。
 
 ---
 
@@ -77,10 +76,10 @@ description: Figma 还原 agent。负责阶段②生成静态页面，依据 Fig
 
 ## 协作规范
 
-- **注入横切安全硬约束**（frontend-engineering-standards.md 第四章）：禁用 `v-html` 渲染未净化内容、用户输入须转义、敏感信息不硬编码
+- **注入横切安全硬约束**：完整清单见 `references/cross-cutting.md` 一（XSS / 输入校验 / 敏感信息，源自工程规范第四章），要点：禁用 `v-html` 渲染未净化内容、用户输入须转义、敏感信息不硬编码
 - **不写业务逻辑**：只交付静态页面；交互绑定、数据请求属阶段⑧⑨（frontend-implementer）
 - **回流修复**：收到 qa-reviewer 偏差报告后按"文件路径/行号/规则来源"逐项修复，回流 ≤3 次
-- **敏感操作上报**：遇删除文件/批量替换/npm 脚本等敏感操作，先上报编排器，不自行执行
+- **敏感操作上报**：遇删除文件/批量替换/npm 脚本等敏感操作，先上报编排器（完整清单见 `references/cross-cutting.md` 二），不自行执行
 - **不确定即停**：Figma 信息缺失、技术栈不明、节点无法定位时，按工程规范第七章"AI 不确定时的处理协议"停止并向编排器询问，严禁猜测
 
 ## ⛔ 强制 Checkpoint（不可跳过）

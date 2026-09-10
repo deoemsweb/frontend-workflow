@@ -12,7 +12,7 @@
 
 【输入】
 - Figma 链接 / 节点 key：{{figma_url_or_node}}
-- 技术栈：{{tech_stack}}                 # 如 Vue2/JS/ElementUI（本项目）或 Vue3/TS
+- 技术栈：{{tech_stack}}                 # 如 Vue2/JS/ElementUI 或 Vue3/TS
 - 目标范围：{{scope}}                     # 单页面 / 多页面 / 单个组件 / 整模块
 - 输出目录：{{output_dir}}
 
@@ -30,18 +30,18 @@
 5. 按第十章 QA Checklist 逐项自检（布局 / 颜色 / 字体 / 资源 / 内容 / 交互 / 可访问性 / 代码质量）。
 6. 完成后进入「检查（Agent 只读）」跑结构化偏差报告，单环节最多回流 3 次；到达人工 Gate（④）暂停等我验收。
 
-【本项目（Vue2/JS/ElementUI）适配】
-- 用 Options API，非 Vue3 <script setup>；
+【技术栈适配（示例，以项目实际为准；Vue2 项目可参看 frontend-workflow-usage.md 映射表）】
+- Vue2：用 Options API，非 Vue3 <script setup>；
 - 样式 <style scoped lang="scss">，禁止 inline style，动态样式用 :class；
-- 富文本用 v-rich-text 指令，禁用 v-html；
-- 与 ElementUI 共存策略：Figma 优先 + 最小覆盖；标准组件（按钮/输入/下拉/表格/弹窗/分页等）优先用 ElementUI 组件实现，不手写裸标签（见 8.4 自主选型）。
+- 富文本用项目认可的净化指令（如 v-rich-text），禁用 v-html；
+- 与 UI 组件库共存策略：Figma 优先 + 最小覆盖；标准组件（按钮/输入/下拉/表格/弹窗/分页等）优先用项目组件库实现，不手写裸标签（见 8.4 自主选型）。
 - 若技术栈为 React（antd）或 Vue3（Element Plus），按 8.4.3 多栈映射表选对应库组件（如 `a-button` / `a-input` / `a-table`、`el-button` 等），仍遵循 Figma 优先 + 最小覆盖。
 ```
 
 ## 模板 B：精简版（一行触发）
 
 ```text
-用 frontend-workflow skill 按 figma-design-constraint.md 把 {{figma_url}} 还原成 {{tech_stack}} 静态页面，写到 {{output_dir}}。优先用 Figma MCP（get_figma_data / download_figma_images）读取设计数据；严格六条核心规则（禁止美化 / 补缺失状态 / 第三方图标替代），用 Design Token，过第十章 QA Checklist，完成后等我验收。
+用 frontend-workflow skill 按 figma-design-constraint.md 把 {{figma_url_or_node}} 还原成 {{tech_stack}} 静态页面，写到 {{output_dir}}。优先用 Figma MCP（get_figma_data / download_figma_images）读取设计数据；严格六条核心规则（禁止美化 / 补缺失状态 / 第三方图标替代），用 Design Token，过第十章 QA Checklist，完成后等我验收。
 ```
 
 ## 占位符说明

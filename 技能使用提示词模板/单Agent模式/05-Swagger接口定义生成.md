@@ -12,7 +12,7 @@
 
 【输入】
 - Swagger 文档：{{swagger_source}}          # open.json 文件路径 / swagger.json 路径 / 在线 api-docs URL
-- 技术栈：{{tech_stack}}                     # 如 Vue2/JS（本项目）或 Vue3/TS
+- 技术栈：{{tech_stack}}                     # 如 Vue2/JS 或 Vue3/TS
 - 生成范围：{{scope}}                        # 全量生成 / 指定模块（如「用户管理」「订单」）/ 指定接口
 - 项目根目录：{{project_dir}}                # 用于探测既有接口模式
 - 模式：{{mode}}                             # 全新生成 / 增量更新（已有接口定义时）
@@ -22,7 +22,7 @@
 2. Swagger 读取（第二章）：解析 paths / components/schemas / tags / security；解析失败或缺关键字段（responses/schema）则停止询问，不臆造返回结构。
 3. 项目模式探测（第三章）：Read 请求封装层 + 既有接口模块文件，提取命名约定 / 注释风格 / 模块归类 / 响应解包层级 / 鉴权拦截器，输出「模式画像」给我确认（人工 Gate ⑦b⑦c 前置确认）。
 4. 生成规则（第四章）：
-   - 复用项目封装层（本项目 http.js 的 get/post/del），禁止裸调 axios / fetch；
+   - 复用项目封装层（如 http.js 的 get/post/del），禁止裸调 axios / fetch；
    - 按 Swagger tags / path 归类到对应业务模块目录；
    - 函数命名对齐项目既有约定（如 getUserList）；
    - 每个函数完整 JSDoc：@param（类型+说明）、@returns（类型）；
@@ -36,11 +36,11 @@
 - 响应解包层级必须从封装层 / 既有样本确认，不按 Swagger 猜。
 - 鉴权：封装层拦截器已注入 token 则生成的函数不重复传。
 
-【本项目（Vue2/JS/ElementUI）适配】
-- 封装层：src/utils/http/http.js，导出 get / post / del / axiosRequest；
-- 模块组织：src/utils/http/modules/<Business>/<business>.js；
-- 类型方式：JavaScript（无 TS），用 @typedef 定义复杂类型，置于文件顶部；
-- 命名：函数名 getUserList（动词+资源+List/Detail），文件名小驼峰。
+【技术栈适配（示例，以项目实际为准；Vue2 项目可参看 frontend-workflow-usage.md 映射表）】
+- 封装层：以项目实际封装层为准（示例：src/utils/http/http.js，导出 get / post / del / axiosRequest）；
+- 模块组织：以项目实际组织为准（示例：src/utils/http/modules/<Business>/<business>.js）；
+- 类型方式：TypeScript 用 interface；JavaScript 用 @typedef 定义复杂类型，置于文件顶部；
+- 命名：函数名对齐项目既有约定（示例：getUserList = 动词+资源+List/Detail，文件名小驼峰）。
 ```
 
 ## 模板 B：精简版（一行触发）

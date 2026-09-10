@@ -3,9 +3,12 @@
  * advance-fw-phase.cjs — frontend-workflow 阶段推进统一入口
  *
  * 内部流程:
- *   1. 运行 validate-fw-phase-gate.cjs 门控校验
+ *   1. 运行 validate-fw-phase-gate.cjs 门控校验（含人工 Gate 的 gateChecks 强制校验）
  *   2. 校验通过 → 更新状态文件（前一 phase 置 completed、目标 phase 置 running、刷新 updatedAt）
  *   3. 返回 nextAgent，提示编排器下一步应 spawn 的 .agents/ 角色
+ *
+ * 注：人工 Gate 的 gateChecks 置位由 set-fw-gate.cjs 独立完成（用户确认后调用），
+ *     本脚本离开 Gate 阶段时不再自动置位，避免"未经确认穿透 Gate"。
  *
  * 用法:
  *   node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
@@ -93,7 +96,10 @@ const updated = { ...state }
 
 if (targetPhase > 0) {
   const prevKey = getPhaseKey(targetPhase - 1)
-  updated.phases[prevKey] = { ...updated.phases[prevKey], status: 'completed', completedAt: now }
+  // 保持 skipped 语义：被显式跳过的阶段（--start 或 skip-fw-phase）不因推进被改标 completed
+  if (updated.phases[prevKey]?.status !== 'skipped') {
+    updated.phases[prevKey] = { ...updated.phases[prevKey], status: 'completed', completedAt: now }
+  }
 }
 const targetKey = getPhaseKey(targetPhase)
 updated.phases[targetKey] = { ...updated.phases[targetKey], status: 'running', startedAt: now }

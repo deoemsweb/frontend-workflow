@@ -10,8 +10,8 @@
 |------|--------|
 | 想让主 agent 自己顺序执行、快速单次产出 | 上级 `01~09` 单 agent 模板 |
 | 想启用多 agent 编排（编排器调度专职 agent + 状态机 Gate + 只读检查回流） | **本目录对应 `*-多Agent.md`** |
-| 端到端全流程（②~⑫） | 本目录 `08-端到端全流程-多Agent.md`（默认即多 agent） |
-| TAPD 缺陷修复独立分支 | 本目录 `09-TAPD缺陷修复-多Agent.md`（默认即多 agent） |
+| 端到端全流程（②~⑫） | 本目录 `08-端到端全流程-多Agent.md`（**唯一默认即多 agent** 的场景） |
+| TAPD 缺陷修复独立分支 | 本目录 `09-TAPD缺陷修复-多Agent.md`（可选；默认单 agent，追加触发句后启用） |
 
 ## 模板索引
 
@@ -23,9 +23,11 @@
 | [04-开发计划活文档-多Agent.md](./04-开发计划活文档-多Agent.md) | 原型 → 开发计划活文档（⑤ / 3.7） | `prd-analyst` | 可选 |
 | [05-Swagger接口定义生成-多Agent.md](./05-Swagger接口定义生成-多Agent.md) | Swagger → 前端接口定义（⑦b⑦c） | `api-contractor` | 可选 |
 | [06-业务文档接入与前端工程实现-多Agent.md](./06-业务文档接入与前端工程实现-多Agent.md) | 业务文档接入 + 工程实现（⑧a⑧⑨） | `frontend-implementer` | 可选 |
-| [07-测试能力（待扩展）-多Agent.md](./07-测试能力（待扩展）-多Agent.md) | 测试（独立分支 3.5） | `test-engineer`（占位，规范未定稿） | 占位 |
+| [07-测试与用例生成-多Agent.md](./07-测试与用例生成-多Agent.md) | 测试与用例生成（可选环节 3.5） | `test-engineer`（两段式：用例文档→内嵌 Gate→代码） | 可选（粘贴即用） |
 | [08-端到端全流程-多Agent.md](./08-端到端全流程-多Agent.md) | 原型 → 交付 全链路（②~⑫） | 编排器按阶段调度全部角色 | 启用（默认多 agent） |
-| [09-TAPD缺陷修复-多Agent.md](./09-TAPD缺陷修复-多Agent.md) | TAPD 缺陷修复（独立分支 3.6） | `tapd-bugfixer` | 启用（独立分支） |
+| [09-TAPD缺陷修复-多Agent.md](./09-TAPD缺陷修复-多Agent.md) | TAPD 缺陷修复（独立分支 3.6） | `tapd-bugfixer` | 可选（默认单 agent，追加触发句后启用） |
+
+> **10 号（活文档关联 OpenSpec）无独立多 Agent 模板**：其多 agent 执行复用 `prd-analyst` 角色说明，入口见 `../单Agent模式/10-活文档关联OpenSpec.md` 的「多 Agent 模式（可选）」块（SKILL.md 3.9 已声明此规则）。
 
 ## 每个文件的结构
 
@@ -39,7 +41,7 @@
 
 1. 选定场景文件，替换 `{{...}}` 占位符。
 2. 复制 **模板 A** 或 **模板 B** 粘贴到对话；主 agent 会自动进入编排器角色，按 `references/multi-agent-orchestration.md` 调度。
-3. 各人工 Gate（④⑤a⑦b⑦c⑧a⑪⑫ 或 TAPD 两处）会暂停等你确认；敏感操作（git / npm / TAPD 写操作等）会先询问。
+3. 各人工 Gate（④⑤a⑦⑦c⑧a⑪⑫ 或 TAPD 两处）会暂停等你确认（确认后编排器 `set-fw-gate.cjs` 置位再推进）；敏感操作（git / npm / TAPD 写操作等）会先询问。
 4. 状态机脚本在 `.codebuddy/plans/<任务名>-fw-state.json` 记录进度，支持中断恢复。
 
 > 若只要单 agent 顺序执行，请回到../单Agent模式/ 目录使用对应的 `01~09` 单 agent 模板。

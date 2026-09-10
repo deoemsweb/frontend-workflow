@@ -14,7 +14,7 @@
 | 核心 reference | `api-definition-generation.md`（Swagger 解析 / 模式探测 / 生成规则 / 增量更新 / 质量校验） |
 | 检查 agent | （可选）`qa-reviewer`（只读）按工程硬约束复核类型/封装复用 |
 | 人工 Gate | ⑦b⑦c 接口验收（apiConfirmed） |
-| 状态机 | `scripts/create-fw-workflow.cjs <任务名> --start 6` → `validate/advance-fw-phase.cjs` |
+| 状态机 | `scripts/create-fw-workflow.cjs <任务名> --start 6` → `validate/advance-fw-phase.cjs` + `set-fw-gate.cjs` |
 
 ## 模板 A：完整版（多 Agent 编排）
 
@@ -36,12 +36,12 @@
 2. 调用 `node scripts/create-fw-workflow.cjs <任务名> --start 6` 初始化状态机（phase 6 = ⑦b⑦c）。
 3. spawn `api-contractor`（.agents/api-contractor.md），dispatch 提示词须注入：
    - 必读：references/api-definition-generation.md；
-   - 横切安全硬约束（§七，接口层注意鉴权/敏感信息）；
-   - 敏感操作（git / npm / 整文件覆盖）前先上报（§六）；
+   - 横切安全硬约束（`references/cross-cutting.md` 一，接口层注意鉴权/敏感信息）；
+   - 敏感操作（git / npm / 整文件覆盖）前先上报（`references/cross-cutting.md` 二）；
    - 完成后回报产物路径与关键上下文。
-4. api-contractor：解析 Swagger paths/schemas/tags/security；探测项目既有接口模式（封装层 / 命名 / 注释 / 归类 / 解包层级 / 鉴权），输出「模式画像」经 ⑦b⑦c 内嵌 Gate 前置让我确认；按规则生成（复用封装层、禁止裸调 axios、完整 JSDoc、$ref 解析为类型）；增量模式只改对应函数并出 delta；严禁猜测缺省 schema / 解包层级。
+4. api-contractor：解析 Swagger paths/schemas/tags/security；探测项目既有接口模式（封装层 / 命名 / 注释 / 归类 / 解包层级 / 鉴权），输出「模式画像」经 ⑦b 内嵌 Gate 前置让我确认；按规则生成（复用封装层、禁止裸调 axios、完整 JSDoc、$ref 解析为类型）；增量模式只改对应函数并出 delta；严禁猜测缺省 schema / 解包层级。
 5. （可选）spawn `qa-reviewer`（只读）复核类型准确性与封装复用。
-6. 到达人工 Gate ⑦b⑦c 时暂停，待我确认接口后把 `gateChecks.apiConfirmed` 置 true 并 `advance-fw-phase.cjs <任务名> 7` 推进。
+6. 到达人工 Gate ⑦b⑦c 时暂停，待我确认接口后调用 `node scripts/set-fw-gate.cjs <任务名> apiConfirmed` 置位，再 `node scripts/advance-fw-phase.cjs <任务名> 7` 离开 phase 6。
 ```
 
 ## 模板 B：精简版（一行触发，多 Agent）

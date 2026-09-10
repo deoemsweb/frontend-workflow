@@ -14,7 +14,7 @@
 - Figma 链接 / 节点：{{figma_url}}
 - 目标项目目录：{{project_dir}}            # 需已 openspec init；若未初始化请先引导我执行
 - 技术栈（参考用，不影响 PRD 写法）：{{tech_stack}}
-- Swagger / 接口 JSON（可选）：{{swagger_path or 无}}   # 用于补齐 API 契约
+- Swagger / 接口 JSON（可选）：{{swagger_path}}   # 用于补齐 API 契约，无则留空
 
 【执行要求】
 1. 输入源走 2.2 节（Figma 读取）：优先 Figma MCP（get_figma_data / download_figma_images），不可用则请我提供链接 / 节点 key / 截图。

@@ -1,4 +1,4 @@
-# 提示词模板 08：TAPD 缺陷修复（需求关联缺陷 / 批量修 bug）
+# 提示词模板 09：TAPD 缺陷修复（需求关联缺陷 / 批量修 bug）
 
 > 规则依据：`references/tapd-bugfix-workflow.md`（3.6 独立分支，含阶段零前置验证 + 5 阶段流程）。
 > 适用：根据 TAPD 需求 ID 拉取关联缺陷、筛选前端负责的 Bug、生成活文档修复计划并执行（前端代码修复 / 发评论通知后端·产品·测试），验证通过后更新状态。是开发后维护生命周期分支，不进入 ②~⑫ 主流程。
@@ -58,6 +58,6 @@
 | `{{product}}` | 产品经理姓名（可选，用于@产品发评论） | `李紫茵` |
 | `{{qa}}` | 测试人员姓名（可选，修复完成后@测试关注验证） | `张测试` |
 
-## 多 Agent 模式（独立分支启用）
+## 多 Agent 模式（可选）
 
-TAPD 缺陷修复是**独立生命周期分支**，默认即由专职 agent **`tapd-bugfixer`**（`.agents/tapd-bugfixer.md`）执行，编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）仅做入口路由，不进入 ②~⑫ 主流程状态机。如需显式多 agent 协作，在提示词开头追加「用多 agent / 团队协作模式」；缺陷筛选确认、验证后更新状态两处 Gate 仍须人工确认，TAPD 写操作（`update_bug` / `create_comments`）前须询问。完整协议见 `references/multi-agent-orchestration.md`（§十一 3.6）。
+TAPD 缺陷修复是**独立生命周期分支**，**默认单 agent 顺序执行**；如需多 agent，在提示词开头追加「用多 agent / 团队协作模式」，即由专职 agent **`tapd-bugfixer`**（`.agents/tapd-bugfixer.md`）执行，编排器 `workflow-orchestrator`（`.agents/workflow-orchestrator.md`）仅做入口路由，不进入 ②~⑫ 主流程状态机。缺陷筛选确认、验证后更新状态两处 Gate 仍须人工确认，TAPD 写操作（`update_bug` / `create_comments`）前须询问。完整协议见 `references/multi-agent-orchestration.md`（§十一 3.6）。

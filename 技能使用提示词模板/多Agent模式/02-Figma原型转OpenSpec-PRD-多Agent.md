@@ -10,10 +10,10 @@
 |----|------|
 | 编排器 | `workflow-orchestrator`（`.agents/workflow-orchestrator.md`） |
 | 执行 agent | `prd-analyst`（`.agents/prd-analyst.md`） |
-| 覆盖阶段 | ⑤a（方案确认，内嵌 Gate）+ ⑤（生成 PRD） |
+| 覆盖阶段 | ⑤a（方案确认，由编排器执行）+ ⑤（生成 PRD） |
 | 核心 reference | `prototype-to-openspec-prd.md`（2.2 Figma 读取 / 第七章拆解 / 第八章质检 / 第十章边界） |
-| 检查 agent | `qa-reviewer`（只读）→ `.codebuddy/plans/<任务名>-review-prd.md` |
-| 人工 Gate | ⑤a 业务文档方案确认（内嵌）、⑦ 需求确认（docConfirmed） |
+| 检查 agent | `qa-reviewer`（只读）→ `.codebuddy/plans/<任务名>-review-prd.md`（编排器落盘） |
+| 人工 Gate | ⑤a 业务文档方案确认（编排器执行）、⑦ 需求确认（docConfirmed） |
 | 状态机 | `scripts/create-fw-workflow.cjs <任务名> --start 3` → `validate/advance-fw-phase.cjs` |
 
 ## 模板 A：完整版（多 Agent 编排）
@@ -28,19 +28,19 @@
 - Figma 链接 / 节点：{{figma_url}}
 - 目标项目目录：{{project_dir}}            # 需已 openspec init；若未初始化请先引导我执行
 - 技术栈（参考用）：{{tech_stack}}
-- Swagger / 接口 JSON（可选）：{{swagger_path or 无}}
+- Swagger / 接口 JSON（可选）：{{swagger_path}}   # 无则留空
 
 【编排指令】
 1. 意图解读：确认范围 / 技术栈 / 是否含 Swagger，输出意图清单让我确认。
-2. 调用 `node scripts/create-fw-workflow.cjs <任务名> --start 3` 初始化状态机（phase 3 = ⑤a⑤）。
+2. 调用 `node scripts/create-fw-workflow.cjs <任务名> --start 3` 初始化状态机（phase 3 = ⑤，⑤a 方案确认由你编排器先行完成）。
 3. 方案 Gate ⑤a：先问我用 OpenSpec（本任务）还是 fw-dev-spec 活文档，未确认不得生成。
 4. spawn `prd-analyst`（.agents/prd-analyst.md），dispatch 提示词须注入：
    - 必读：references/prototype-to-openspec-prd.md（2.2 Figma 读取、第七章拆解、第八章质检、第十章边界）；
-   - 敏感操作（openspec init / git / npm）前先上报（§六）；
+   - 敏感操作（openspec init / git / npm）前先上报（`references/cross-cutting.md` 二）；
    - 完成后回报产物路径与关键上下文。
 5. prd-analyst：2.2 优先 Figma MCP 读取；输出结构化需求清单让我确认（2.4/2.5）；检查 OpenSpec 环境（第三章）；按第七章划分 capability 生成 specs/proposal/design/tasks；过第八章质检；严禁猜测后端接口 / 业务规则 / 字段含义，未知项标 `> ⚠️ 待确认：...`。
-6. 生成后 spawn `qa-reviewer`（只读）跑偏差报告到 `.codebuddy/plans/<任务名>-review-prd.md`。
-7. 到达人工 Gate ⑦ 时暂停，待我确认需求后把 `gateChecks.docConfirmed` 置 true 并 `advance-fw-phase.cjs <任务名> 5` 推进。
+6. 生成后 spawn `qa-reviewer`（只读）产出偏差报告内容，由你落盘到 `.codebuddy/plans/<任务名>-review-prd.md`。
+7. 到达人工 Gate ⑦ 时暂停，待我确认需求后调用 `node scripts/set-fw-gate.cjs <任务名> docConfirmed` 置位，再 `node scripts/advance-fw-phase.cjs <任务名> 6` 离开 ⑦ 进入 ⑦b⑦c。
 ```
 
 ## 模板 B：精简版（一行触发，多 Agent）

@@ -4,6 +4,8 @@
 
 ## 工具一览
 
+> 阶段划分以 `references/tapd-bugfix-workflow.md` 为准，本表仅作速查。
+
 | 阶段 | 工具 | 用途 |
 |------|------|------|
 | 阶段零 | `mcp__tapd__get_user_participant_projects` | 连通性探针（无需参数，验证 MCP 已连接且鉴权） |
@@ -11,9 +13,9 @@
 | 阶段二 | `mcp__tapd__get_related_bugs` | 获取需求关联的 Bug ID 列表 |
 | 阶段二 | `mcp__tapd__get_entity_custom_fields` | 获取 bugs 的自定义字段映射 |
 | 阶段二 | `mcp__tapd__get_bug` | 批量获取 Bug 详情 |
-| 阶段二 | `mcp__tapd__get_workitem_types` | 获取项目需求类别（用于 status map） |
-| 阶段二 | `mcp__tapd__get_workflows_status_map` | 获取缺陷状态中英文映射 |
-| 阶段四 | `mcp__tapd__get_comments` | 读取已有评论（可选，用于分组判定） |
+| 阶段三 | `mcp__tapd__get_workitem_types` | 获取项目需求类别（用于 status map） |
+| 阶段三 | `mcp__tapd__get_workflows_status_map` | 获取缺陷状态中英文映射 |
+| 阶段三 | `mcp__tapd__get_comments` | 读取已有评论（可选，用于分组判定） |
 | 阶段四 | `mcp__tapd__create_comments` | 发评论 @相关人员 |
 | 阶段五 | `mcp__tapd__update_bug` | 更新 Bug 状态为已解决 |
 
