@@ -11,7 +11,9 @@
  *   4. pendingConfirmations 全部 resolved
  *
  * 用法:
- *   node scripts/validate-fw-phase-gate.cjs <任务名> <目标内部phase>
+ *   node scripts/validate-fw-phase-gate.cjs <任务名> <目标内部phase> [--allow-empty]
+ *
+ *   --allow-empty: 允许代码阶段（phase 0/7）无工作区变更时通过（留痕由 advance 写入）
  *
  * 输出:
  *   { pass: true,  warnings: [] }           → 退出码 0
@@ -32,11 +34,13 @@ const {
 
 // ─── 参数解析 ───────────────────────────────────────────────────
 
-const [taskName, targetArg] = process.argv.slice(2)
+const rawArgs = process.argv.slice(2)
+const allowEmpty = rawArgs.includes('--allow-empty')
+const [taskName, targetArg] = rawArgs.filter(a => a !== '--allow-empty')
 const targetPhase = parseInt(targetArg)
 
 if (!taskName || isNaN(targetPhase)) {
-  console.error('用法: node validate-fw-phase-gate.cjs <任务名> <目标内部phase>')
+  console.error('用法: node validate-fw-phase-gate.cjs <任务名> <目标内部phase> [--allow-empty]')
   console.error('示例: node validate-fw-phase-gate.cjs user-export 3')
   process.exit(1)
 }
@@ -71,7 +75,7 @@ if (!state) {
     // 其产物/人工验收本就无需产出，不应误阻断推进
     if (state.phases?.[getPhaseKey(p)]?.status === 'skipped') continue
     // biz-doc=skip 场景：跳过业务文档目录产物校验（⑤a 已确认不产出业务文档）
-    if (p === 3 && state.bizDocPlan === 'skip' && PHASE_ARTIFACTS[p]?.type === 'dir') continue
+    if (p === 3 && state.bizDocPlan === 'skip' && ['dir', 'bizdoc'].includes(PHASE_ARTIFACTS[p]?.type)) continue
     // 人工 Gate（gate 类 phase，④⑦⑦b⑦c⑪ 等）：离开前必须已获用户确认。
     // 置位由编排器在用户确认后调用 set-fw-gate.cjs 完成，advance 不再自动置位。
     if (PHASE_ARTIFACTS[p]?.type === 'gate') {
@@ -81,10 +85,18 @@ if (!state) {
       }
       continue
     }
-    const r = checkPhaseArtifact(taskName, p, state)
+    const r = checkPhaseArtifact(taskName, p, state, { allowEmpty })
+    if (Array.isArray(r.warnings)) warnings.push(...r.warnings)
     if (!r.pass) {
       blockers.push(`phase ${p}（${getPhaseDisplay(p)} ${getPhaseName(p)}）产物未就绪: ${r.description}` + (r.detail ? ` → ${r.detail}` : ''))
     }
+  }
+
+  // 2.5 测试用例审阅（内嵌 Gate，不占 phase）：登记了用例文档则进入 ⑩ 前必须置位
+  if (targetPhase >= 8 && state.testCasesDoc && state.gateChecks?.testCasesConfirmed !== true) {
+    blockers.push(
+      `测试用例文档已登记（${state.testCasesDoc}）但用例审阅 Gate 未置位：请先调用 node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases ${state.testCasesDoc}`
+    )
   }
 
   // 3. 待确认项

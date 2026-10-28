@@ -11,9 +11,9 @@
 | 编排器 | `workflow-orchestrator`（`.agents/workflow-orchestrator.md`） |
 | 执行 agent | `test-engineer`（`.agents/test-engineer.md`，正式角色） |
 | 覆盖阶段 | 可选环节 3.5（⑨→⑩ 之间，测试） |
-| 核心 reference | `testing.md`（正式规则）+ `cross-cutting.md`（铁律 · 三 / 敏感操作 · 四） |
+| 核心 reference | `testing.md`（正式规则）+ `cross-cutting.md`（铁律 · 三 / 敏感操作 · 二） |
 | 检查 agent | —（测试本身即质量活动；❌ 代码缺陷回流 frontend-implementer） |
-| 人工 Gate | **用例审阅（内嵌 Gate）**：用例文档确认后才生成代码；不占状态机 phase |
+| 人工 Gate | **用例审阅（内嵌 Gate）**：用例文档确认后才生成代码；不占状态机 phase，通过后置位 `testCasesConfirmed` 并登记 `testCasesDoc` |
 | 状态机 | 不占独立 phase：插在 ⑨→⑩ 之间，由编排器调度 test-engineer |
 
 ## 模板 A：完整版（多 Agent 编排）
@@ -31,10 +31,12 @@
 
 【编排指令】
 1. dispatch `test-engineer`（.agents/test-engineer.md），注入必读 references/testing.md + cross-cutting.md（铁律 · 三 / 敏感操作 · 四）与上述输入。
-2. test-engineer 按 testing.md 第二章生成测试用例文档后，你执行【内嵌 Gate · 用例审阅】：向我展示用例统计与覆盖矩阵，确认 [通过/调整/返工]；**确认前不得放行代码生成**。
-3. Gate 通过后 test-engineer 生成可执行测试（E2E 用 scripts/testing/ 执行层）；其请求执行测试命令（npm test / playwright / npm install）时，你按 cross-cutting.md 四统一向我询问。
-4. 回收执行结果：核对是否附本次命令输出证据（cross-cutting.md 三 · 完成前验证铁律）；无证据的"测试通过"断言退回补验证。
-5. ❌ 用例判定为代码缺陷时，dispatch 回 frontend-implementer 修复（可触发 ⑩ 回流）；完成后回报测试产物路径、用例状态回写与覆盖缺口。
+2. test-engineer 按 testing.md 第二章生成测试用例文档后，你执行【内嵌 Gate · 用例审阅】：向我展示用例统计与覆盖矩阵，确认 [通过/调整/返工]；**确认前不得放行代码生成**。通过后由你置位并登记用例文档（不占 phase）：
+   `node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>`
+3. Gate 通过后 test-engineer 生成可执行测试（E2E 用 scripts/testing/ 执行层）；其请求执行测试命令（npm test / playwright / npm install）时，你按 cross-cutting.md 二统一向我询问。
+4. 本地服务进程：dispatch 时注入「进程与资源约束」块——启动前 `fw-process register` 登记、优先用 with_server.py、结束 `cleanup` + `check`；回收结果时核验端口释放证据，残留不得放行（cross-cutting.md 五）。
+5. 回收执行结果：核对是否附本次命令输出证据（cross-cutting.md 三 · 完成前验证铁律）；无证据的"测试通过"断言退回补验证。
+6. ❌ 用例判定为代码缺陷时，dispatch 回 frontend-implementer 修复（可触发 ⑩ 回流）；完成后回报测试产物路径、用例状态回写与覆盖缺口。
 ```
 
 ## 模板 B：精简版（一行触发，多 Agent）

@@ -11,7 +11,10 @@
  *     本脚本离开 Gate 阶段时不再自动置位，避免"未经确认穿透 Gate"。
  *
  * 用法:
- *   node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
+ *   node scripts/advance-fw-phase.cjs <任务名> <目标内部phase> [--allow-empty]
+ *
+ *   --allow-empty: 允许代码阶段（phase 0/7）无工作区变更时通过；推进成功后在
+ *                  状态文件 allowEmptyPhases 留痕（{ at, reason }），便于审计。
  *
  * 输出:
  *   成功 → { success:true, nextAgent, phaseName, ... } + 退出码 0
@@ -19,7 +22,7 @@
  */
 
 const path = require('path')
-const { execSync } = require('child_process')
+const { spawnSync } = require('child_process')
 const {
   readStateFile,
   writeStateFile,
@@ -32,11 +35,13 @@ const {
 
 // ─── 参数解析 ───────────────────────────────────────────────────
 
-const [taskName, targetArg] = process.argv.slice(2)
+const rawArgs = process.argv.slice(2)
+const allowEmpty = rawArgs.includes('--allow-empty')
+const [taskName, targetArg] = rawArgs.filter(a => a !== '--allow-empty')
 const targetPhase = parseInt(targetArg)
 
 if (!taskName || isNaN(targetPhase)) {
-  console.error('用法: node advance-fw-phase.cjs <任务名> <目标内部phase>')
+  console.error('用法: node advance-fw-phase.cjs <任务名> <目标内部phase> [--allow-empty]')
   console.error('示例: node advance-fw-phase.cjs user-export 3')
   process.exit(1)
 }
@@ -66,16 +71,27 @@ if (state.phase > targetPhase) {
   process.exit(1)
 }
 
-// 门控校验
+// 门控校验（参数数组调用，避免 shell 转义问题；--allow-empty 透传给 validate）
 const gateScript = path.join(__dirname, 'validate-fw-phase-gate.cjs')
+const gateArgs = [gateScript, taskName, String(targetPhase)]
+if (allowEmpty) gateArgs.push('--allow-empty')
+
 let gate = { pass: true, blockers: [], warnings: [] }
-try {
-  const out = execSync(`node "${gateScript}" ${taskName} ${targetPhase}`, {
-    encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe']
-  })
-  gate = JSON.parse(out)
-} catch (e) {
-  try { gate = JSON.parse(e.stdout || '{}') } catch { gate = { pass: false, blockers: [e.stderr || e.message], warnings: [] } }
+const gateRun = spawnSync(process.execPath, gateArgs, {
+  encoding: 'utf-8', timeout: 30000, cwd: process.cwd()
+})
+if (gateRun.error) {
+  gate = { pass: false, blockers: [`门控脚本执行失败: ${gateRun.error.message}`], warnings: [] }
+} else {
+  try {
+    gate = JSON.parse(gateRun.stdout || '{}')
+  } catch (e) {
+    gate = {
+      pass: false,
+      blockers: [gateRun.stderr || `门控脚本输出无法解析: ${(gateRun.stdout || '').slice(0, 200)}`],
+      warnings: []
+    }
+  }
 }
 
 if (!gate.pass) {
@@ -106,6 +122,15 @@ updated.phases[targetKey] = { ...updated.phases[targetKey], status: 'running', s
 
 updated.phase = targetPhase
 updated.updatedAt = now
+
+// --allow-empty 留痕：validate 校验的是 target 之前的所有阶段，此处记录 target-1
+if (allowEmpty && targetPhase > 0) {
+  updated.allowEmptyPhases = { ...(updated.allowEmptyPhases || {}) }
+  updated.allowEmptyPhases[String(targetPhase - 1)] = {
+    at: now,
+    reason: 'advance-fw-phase --allow-empty'
+  }
+}
 
 // 终验阶段标记完成
 if (targetPhase === TOTAL_PHASES - 1) {

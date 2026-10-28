@@ -12,7 +12,7 @@
 - 二、测试用例生成（两段式：文档 → Gate → 代码）
 - 三、单元测试规范
 - 四、组件测试规范
-- 五、E2E 测试规范（Playwright 执行层）
+- 五、E2E 测试规范（Playwright 执行层，含 5.5 进程回收与残留校验）
 - 六、视觉回归测试
 - 七、完成前验证铁律（指针 → cross-cutting.md）
 - 八、QA Checklist
@@ -104,7 +104,18 @@
 
 > 用例设计阶段的范围/框架取舍等决策，按 `references/grilling.md` 全局追问协议执行（frontier 轮次 + 推荐答案）。
 
-确认前不得生成可执行测试代码；多 agent 模式下由编排器持有该 Gate（不调用 `set-fw-gate.cjs`，属角色流程内嵌 Gate，不占 phase）。
+确认前不得生成可执行测试代码；多 agent 模式下由编排器持有该 Gate。
+
+**Gate 通过后必须置位并登记用例文档**（内嵌 Gate，不占 phase，供状态机追溯）：
+
+```bash
+node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>
+```
+
+- 置位后状态文件 `gateChecks.testCasesConfirmed=true`、`testCasesDoc=<路径>`；
+- `validate-fw-phase-gate.cjs` 在**进入 ⑩（target ≥ 8）** 时强校验：已登记 `testCasesDoc` 但未置位 → 阻断推进；
+- 未执行 3.5 的任务 `testCasesDoc=null`，不产生阻断（向后兼容）；
+- 回退返工时用 `set-fw-gate ... testCasesConfirmed --unset` 复位，返工后重新走 Gate 再置位。
 
 ### 2.5 代码生成与执行回写
 
@@ -140,9 +151,14 @@
 测试任务 → 是静态 HTML？
     ├─ 是 → 直接读 HTML 确定 selector → 写 Playwright 脚本
     └─ 否（动态应用）→ server 已在运行？
-        ├─ 否 → python scripts/testing/with_server.py --help 后用 helper 编排
-        └─ 是 → 侦察后行动（见 5.2）
+        ├─ 否 → python scripts/testing/with_server.py --help 后用 helper 编排（自带登记/回收）
+        └─ 是 → 先确认是否本任务登记进程：
+              ├─ 是（本次登记且代码为最新）→ 记录后复用，结束时统一 cleanup
+              └─ 否 / 来源不明 / 旧进程 → 不直接使用（可能跑旧代码）：
+                    fw-process cleanup 回收 → 再启动
 ```
+
+> **端口预检强制**：动态应用启动前必须确认目标端口空闲。端口已被占用时**禁止直接启动**（新进程绑定失败，测试实际连到旧进程 → 假绿），先回收或改用空闲端口（见 5.5）。
 
 **脚本黑盒原则**：先 `--help` 看用法再调用，**不读 with_server.py 源码**（脚本较大，避免污染上下文）。
 
@@ -165,6 +181,14 @@ python scripts/testing/with_server.py \
   -- python e2e/tc-01-login.py
 ```
 
+`with_server.py` 的生命周期保证（硬约束，勿绕开）：
+
+1. **启动前预检端口**：已被占用直接退出码 2 并提示先 `fw-process cleanup`（避免连到上次残留进程产生假绿）；
+2. **独立进程组/会话启动**：Windows 用 `taskkill /T /F`、POSIX 用 `killpg` 回收**整棵进程树**（只杀 shell 会留下 node 子进程占端口）；
+3. **输出重定向到日志文件**：避免 `stdout=PIPE` 缓冲区写满导致死锁；启动失败时打印日志尾部；
+4. **`finally` 必回收**：成功 / 失败 / 异常 / Ctrl+C 均执行；回收后逐个校验端口释放，仍被占用时退出码 3 报泄漏；
+5. `--keep` 仅限人工排查，使用后必须自行回收（会在输出中打印 PID/端口）。
+
 自动化脚本只写 Playwright 逻辑（server 由 helper 拉起），模板：
 
 ```python
@@ -184,6 +208,25 @@ with sync_playwright() as p:
 - 一条 E2E 用例 = 一个脚本（或脚本内一个具名函数），命名 `e2e/tc-<编号>-<slug>.py`，与用例文档编号一一对应；
 - 环境地址（base URL）从参数/环境变量读取，**不硬编码**；
 - 失败时输出：截图 + console 日志（参考 `examples/console_logging.py`）+ 失败断言上下文。
+
+### 5.5 进程回收与残留校验（强制）
+
+> 规则权威定义见 `references/cross-cutting.md` 五；本节是测试场景的落地要求。
+
+1. **登记**：手工启动（未走 `with_server.py`）的 dev server / mock server，启动前必须登记，启动完成后**再次 register 同一端口**以补全 PID（脚本会反查并更新原条目）：
+   ```bash
+   node scripts/fw-process.cjs register <任务名> --port 5173 --cmd "npm run dev"
+   # 服务就绪后（补 PID，cleanup 更精准）
+   node scripts/fw-process.cjs register <任务名> --port 5173 --cmd "npm run dev"
+   ```
+2. **回收**：用例执行结束（含失败/异常/中断）必须回收，不允许"留着下次用"：
+   ```bash
+   node scripts/fw-process.cjs cleanup <任务名>
+   node scripts/fw-process.cjs check   <任务名>   # 必须 exit 0
+   ```
+3. **证据**：测试执行报告须附「回收结论」（released 端口列表 + check 通过），与测试命令输出同等视为完成证据。
+4. **多任务/会话结束**：`node scripts/fw-process.cjs cleanup <任务名> --all-tasks` 兜底清理本机全部登记进程。
+5. **失败处理**：`cleanup` 报 `failed`（端口仍占用）时不得标记测试完成，须报告 PID/端口/命令并请求人工处理。
 
 ## 六、视觉回归测试
 
@@ -218,6 +261,8 @@ with sync_playwright() as p:
 - [ ] 有新鲜的命令输出证据（见第七章铁律）方可标记 ✅
 - [ ] ❌ 用例已定位（代码缺陷 vs 用例错误）并记录处置
 - [ ] 用例文档状态已回写；覆盖缺口已声明
+- [ ] 用例审阅 Gate 已置位且登记路径与本次用例文档一致：`gateChecks.testCasesConfirmed=true`、`testCasesDoc` 非空（见 2.4）
+- [ ] 本次启动的所有本地进程均已回收：`fw-process check <任务名>` 通过、相关端口已释放（见 5.5 / cross-cutting.md 五）
 
 ## 九、边界情况与不确定处理
 
@@ -225,6 +270,8 @@ with sync_playwright() as p:
 |------|------|
 | 业务文档无 Scenario / 验收点 | 停下向用户确认测试范围；或从原型交互点推导用例，并在用例文档头部标注"推导来源 + 假设" |
 | 项目无测试框架 | 询问用户是否引入；`npm install` 属敏感操作（见 cross-cutting.md 二），须用户确认后执行 |
+| 端口已被占用（疑似上次残留） | 先 `fw-process check` 判断是否本任务残留 → `cleanup` 后重启；非本任务占用则改用空闲端口，**禁止直接启动** |
+| 回收后端口仍被占用 | 不得标记完成；报告 PID/端口/命令，重试 `cleanup` 或请用户人工结束进程 |
 | 本地无法启动被测服务 | 询问是否有可用的 dev / 部署环境；否则降级为静态检查 + 单元/组件层，E2E 标 ⏭ 说明原因 |
 | 后端未就绪 | E2E 用 Playwright 网络拦截 mock 接口响应，用例文档标注"mock 数据" |
 | 时间紧 / 只需冒烟 | 只生成并执行 P0 用例，在报告中显式声明未覆盖范围 |

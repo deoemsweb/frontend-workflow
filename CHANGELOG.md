@@ -6,7 +6,57 @@
 - 版本号唯一来源为 `SKILL.md` 的 YAML frontmatter `version` 字段（语义化版本 `MAJOR.MINOR.PATCH`）。
 - 每次改动后：在 `SKILL.md` 递增 `version`，并在本文件顶部新增对应 `[x.y.z] - YYYY-MM-DD` 条目。
 - `README.md` 顶部的版本号展示需与 `SKILL.md` 保持同步（仅展示，不另立来源）。
+- **版本级摘要（目标 / 变更点 / 影响文件 / 验证 / 升级动作）记录在 `VERSION.md`**，本文件只记技术流水，两者同一版本互相指向。
 - 变更类型：新增（Added）/ 修改（Changed）/ 修复（Fixed）。
+
+## [1.4.0] - 2026-10-28
+
+### Added
+- **状态模型扩展（向后兼容）**：状态文件新增 `bizDocPath`（本次业务文档）、`testCasesDoc`（本次用例文档）、`allowEmptyPhases`（`--allow-empty` 留痕）、`gateChecks.testCasesConfirmed`。
+- **phase 3 业务文档精确校验**：`PHASE_ARTIFACTS[3]` 改为 `bizdoc`——优先校验 `state.bizDocPath`（文件非空 / 目录含 `proposal.md`/`tasks.md`/`design.md`/`specs/` 或 Markdown）；未登记时回退「`openspec/changes` 与 `fw_dev_spec/*/specs` + 最近 120 分钟 Markdown」，命中给 warning 提示补登记。
+- **phase 0/7 代码阶段弱校验**：`PHASE_ARTIFACTS[0]/[7]` 改为 `workspace`——`git status --porcelain --untracked-files=all` 过滤代码扩展名（排除文档/依赖/构建产物，未跟踪目录展开到文件）；无变更阻断并提示 `--allow-empty`；非 git 仓库降级 warning；git 状态按进程缓存，8s 超时。
+- **`--allow-empty` 透传与留痕**：`validate-fw-phase-gate.cjs` 与 `advance-fw-phase.cjs` 支持该参数；advance 成功后写入 `allowEmptyPhases[phase] = { at, reason }`。
+- **用例审阅内嵌 Gate**：`set-fw-gate.cjs` 扩展 `testCasesConfirmed`（无对应 phase，输出「内嵌 Gate（不占 phase）」）；置位必须带 `--test-cases <路径>` 并写入 `testCasesDoc`；`validate` 在 `target ≥ 8` 且 `testCasesDoc` 非空时强校验，未置位阻断。
+- **`--biz-doc` 路径登记**：`set-fw-gate.cjs` 支持 `docConfirmed --biz-doc <路径>` 写入 `bizDocPath`；与 gateKey 错配时脚本报错。
+- **`create-fw-workflow.cjs --biz-doc-path`**：创建时预置业务文档路径；与 `--biz-doc skip` 冲突时报错。
+- **新增 `VERSION.md`**：面向使用者的版本更新记录（1.0.0~1.4.0：目标 / 变更点 / 影响文件 / 验证 / 升级动作 / 兼容性），与 CHANGELOG 互相指向。
+- `smoke-fw-scripts.cjs` 新增 19 项断言（42 → 61）：bizdoc 精确/阻断/回退、`--biz-doc` 写入、workspace 阻断/`--allow-empty`/留痕/仅文档变更、用例门控阻断/参数校验/放行、`--biz-doc-path` 冲突。
+
+### Changed
+- **`SKILL.md` 结构收敛**：`description` 由 500+ 字收敛到约 200 字（长尾触发词保留在「一、何时使用」）；1.1 / 3.8 / 3.9 的模板与脚本枚举改为「以 `README.md` / 模板 README 为唯一来源 + 指针」；「3.5 测试」从 2.2b 独立分支移出，单列 **2.2d 可选插槽（⑨→⑩）**；2.2c 补 `--biz-doc-path`、`--allow-empty`、内嵌 Gate 置位；2.5 新增「阶段产物校验口径」。
+- **`README.md`** 作为模板/脚本清单唯一来源：补 `VERSION.md`、`--biz-doc-path` / `--allow-empty` / `set-fw-gate` 参数、smoke 61 项；流程图补 ⑨→⑩ 的 3.5 插槽；协作约定补内嵌 Gate 与 `--allow-empty` 口径。
+- `references/testing.md` 2.4：删除「不调用 set-fw-gate.cjs」旧口径，改为 Gate 通过后置位并登记用例文档；QA Checklist 增门控项。
+- `references/multi-agent-orchestration.md`：§三 注改为「phase 0/7 弱校验 + phase 3 精确校验 + 内嵌 Gate」；§9.4 补内嵌 Gate 与路径登记命令；§9.7 补 `--allow-empty`；§十一 3.5 与 §十二 第 2 条同步；smoke 断言数 42 → 61。
+- `.agents/test-engineer.md`（段二置位 + Checkpoint + 交付物）、`.agents/workflow-orchestrator.md`（Gate 置位 / `--allow-empty` 口径 / Checkpoint 8-9）。
+- 模板 07（单 / 多 Agent）：用例审阅 Gate 通过后补置位命令；修正「敏感操作 · 四」为「二」。
+- `frontend-workflow-usage.md`：5.5 补门控置位与检查清单；新增 5.10「v1.4.0 升级提示」；目录树补 `VERSION.md` / `CHANGELOG.md`。
+
+### Fixed
+- 修复 phase 3 仅校验父目录存在（空目录也通过）导致的「业务文档未产出却放行」。
+- 修复 phase 0/7 完全无产物校验导致的「代码未写也能推进」。
+- 修复用例审阅 Gate 不进状态文件、无法追溯「用例已审阅 / 用例文档在哪」。
+- 修复 `git status --porcelain` 未跟踪目录只显示 `?? src/` 导致代码变更无法识别（改用 `-uall` + 目录展开兜底）。
+
+## [1.3.1] - 2026-10-28
+
+### Added
+- **本地进程生命周期治理（横切硬约束）**：新增 `references/cross-cutting.md` 第五章「进程生命周期与资源回收」——四步契约（`register` → 启动并确认监听 → 执行 → `cleanup` + `check`）、禁止裸后台启动、五个强制回收点（用例结束 / 阶段收尾 / Gate 前 / `finish` / 会话结束）、异常降级口径。
+- **新增 `scripts/fw-process.cjs`**：本地长驻进程登记与回收（`register` / `list` / `check` / `cleanup`，支持 `--port` / `--all-tasks` / `--dry-run`）。登记文件 `.codebuddy/plans/<任务名>-fw-processes.json`；按 PID 树回收（Windows `taskkill /T /F`、POSIX 先子后父），**PID 已退出但端口仍占用时按端口兜底回收**（Windows 下 shell 被杀、node 子进程残留的典型泄漏）；`check` 同时校验 PID 存活与端口占用。
+- `references/testing.md` 新增 5.5「进程回收与残留校验」；QA Checklist 与边界情况表补充回收项。
+- `references/frontend-engineering-standards.md` 新增第八章「本地服务的进程生命周期（调试与自测）」。
+- `references/multi-agent-orchestration.md` 新增 §9.8 收尾与资源回收、dispatch 模板「进程与资源约束」块、§五 进程登记文件命名、§十二 不变量第 5 条。
+- `references/tapd-bugfix-workflow.md` 4.5 与阶段五补充进程回收前置。
+- 提示词模板 07/08/09（单 Agent + 多 Agent）补充进程登记/回收要求。
+
+### Changed
+- **`scripts/testing/with_server.py` 重写生命周期**：启动前端口预检（占用则退出码 2，避免连到上次残留进程产生假绿）；Windows 用 `taskkill /T /F`、POSIX 用 `killpg` 回收整棵进程树；服务输出改重定向到日志文件（消除 `stdout=PIPE` 缓冲死锁）；`finally` 保证成功/失败/异常/Ctrl+C 均回收；回收后逐个校验端口释放，仍占用时退出码 3；新增 `--grace` / `--log-dir` / `--keep`。
+- **`scripts/finish-fw-workflow.cjs` 收尾门控**：默认先执行 `fw-process check`，存在未回收进程即阻断收尾；显式 `--allow-residual-processes` 才放行。
+- `SKILL.md`：version 1.3.0 → 1.3.1；2.2c 新增「收尾与进程回收」、2.3 新增收尾检查、2.5 补齐进程约束；顺带修正单 Agent 模板数量漂移（01~10 → 01~11 共 11 个）。
+- `.agents/` 8 个角色 `skillVersion` → 1.3.1；`test-engineer` / `workflow-orchestrator` / `qa-reviewer` / `tapd-bugfixer` / `frontend-implementer` 补充进程回收职责与 Checkpoint。
+- `frontend-workflow-usage.md` 新增 5.9 本地进程登记与回收；测试映射表与生成后检查清单同步；`README.md` 同步版本、脚本清单与能力索引。
+
+### Fixed
+- 修复本地自测进程（dev server / preview / mock server）启动后未被回收导致端口与 CPU 长期占用的问题；`smoke-fw-scripts.cjs` 新增进程登记/回收/`finish` 阻断 8 项断言（34 → 42 项，全通过）。
 
 ## [1.3.0] - 2026-09-10
 

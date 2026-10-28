@@ -1,7 +1,7 @@
 ---
 name: prd-analyst
 description: 需求分析/PRD agent。负责阶段⑤生成业务文档（⑤a 方案确认由编排器完成），按选定方案 Read prototype-to-openspec-prd.md（OpenSpec）或 fw-dev-spec.md（活文档），将 Figma/.md 原型转为 specs/proposal/tasks 或 fw_dev_spec 活文档。遵循严禁猜测协议，产物供下游 ⑧⑨ 实现消费。
-skillVersion: 1.3.0
+skillVersion: 1.4.0
 ---
 
 # 需求分析/PRD agent — PRD Analyst

@@ -19,7 +19,9 @@
 ```
 frontend-workflow/
 ├── SKILL.md                         # 路由层/编排器（触发条件 + 意图解读 + 阶段调度 + 多 agent 编排 + 章节指针）
-├── README.md                        # 能力索引与安装说明
+├── README.md                        # 能力索引与安装说明（模板/脚本清单唯一来源）
+├── VERSION.md                       # 版本更新记录（1.0.0~1.4.0）
+├── CHANGELOG.md                     # 技术变更流水
 ├── .agents/                         # 多 agent 角色定义（可选编排模式）
 │   ├── workflow-orchestrator.md     # 编排器：调度 / 人工 Gate / 状态推进 / 敏感操作统一询问
 │   ├── figma-restorer.md            # Figma 还原（阶段②）
@@ -38,7 +40,7 @@ frontend-workflow/
     ├── tapd-bugfix-workflow.md      # 3.6 TAPD 缺陷修复 5 阶段核心流程（独立分支）
     ├── multi-agent-orchestration.md # 3.8 多 agent 编排协议（角色/映射/上下文/状态机/敏感操作）
     ├── fw-dev-spec.md               # 3.7 原型 → 开发计划活文档（独立分支）
-    ├── cross-cutting.md             # 横切共享块（安全硬约束 + 完成前验证铁律 + 敏感操作清单 + 只读白名单）
+    ├── cross-cutting.md             # 横切共享块（安全硬约束 + 进程回收 + 完成前验证铁律 + 敏感操作清单 + 只读白名单）
     ├── tapd-tool-params.md          # TAPD MCP 工具参数速查
     ├── tapd-grouping-rules.md       # 缺陷分组判定规则
     └── tapd-plan-template.md        # 活文档修复计划模板
@@ -54,7 +56,8 @@ frontend-workflow/
     ├── rollback-fw-phase.cjs        # 阶段回退（返工，仅后向）
     ├── set-fw-gate.cjs              # 人工 Gate 显式置位
     ├── skip-fw-phase.cjs            # 阶段显式跳过（biz-doc=skip）
-    ├── finish-fw-workflow.cjs       # 提前完成收尾
+    ├── finish-fw-workflow.cjs       # 提前完成收尾（默认阻断残留进程）
+    ├── fw-process.cjs               # 本地长驻进程登记/校验/回收
     ├── smoke-fw-scripts.cjs         # 状态机脚本冒烟测试
     └── sync-fw-openspec.cjs         # fw-dev-spec 活文档 ↔ OpenSpec 关联：init/sync/check（可选关联模式）
 ```
@@ -73,6 +76,7 @@ frontend-workflow/
 | 需求拷问澄清（前置） | "需求拷问"、"追问澄清"、"澄清需求"、"grill" | `grilling.md`（3.10 全局追问协议） | 共识清单（已落定决策 + 假设 + 推荐后续分支）；frontier 清空并确认前不动手 |
 | 缺陷修复（独立分支） | "修复 bug"、"缺陷修复"、"tapd bugfix"、"需求关联缺陷"、"批量修 bug" | `tapd-bugfix-workflow.md` | 修复后代码 + TAPD 评论/状态更新 + 活文档计划 |
 | 开发计划活文档（独立分支 3.7） | "开发计划活文档"、"fw_dev_spec"、"原型转开发计划"、"需求开发计划"、"活文档关联 OpenSpec" | `fw-dev-spec.md` | 本地分层活文档（五模块）；可选关联 OpenSpec 时建立双向锚点并单向同步 |
+| 本地进程回收（横切 3.11） | "dev server 没关"、"端口被占用"、"自测进程残留"、"清理测试服务" | `cross-cutting.md` 五 + `scripts/fw-process.cjs` | 进程登记/校验/回收；`finish` 默认阻断残留（见 5.9） |
 
 > 也可在不经过路由的情况下，直接要求"读取 references/xxx.md 的某个章节"单独使用。
 
@@ -180,11 +184,12 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 | 组件挂载 | `mount` + Testing Library 查询 | `shallowMount`/`mount`；ElementUI 组件按需 `stubs` 或局部注册 |
 | 断言风格 | `expect`（Vitest） | `expect`（Jest）+ `@vue/test-utils` 的 `emitted()` / `find()` / `props()` |
 | TS 类型 | 显式类型 + 禁 `any` | **不适用**（JS）；用例数据与 mock 结构写清楚注释即可 |
-| E2E | Playwright（Python 脚本） | **通用**：`scripts/testing/with_server.py` 编排（`npm run serve` + 后端），动态页面先等 `networkidle` 再侦察 DOM |
+| E2E | Playwright（Python 脚本） | **通用**：`scripts/testing/with_server.py` 编排（`npm run serve` + 后端），自带端口预检 + 进程树回收；手工启动必须 `fw-process register` 登记并在结束 `cleanup`。动态页面先等 `networkidle` 再侦察 DOM |
 | 命令 | `npm run test` | 测试命令执行前必须向用户确认（敏感操作） |
 
 - **用例文档落位**：有 `fw_dev_spec/` 时放 `fw_dev_spec/<需求名-日期>/specs/测试用例.md`（复用 ⬜🔄✅⏭ 进度约定）；否则放项目 `test-cases/<feature>.md`。
-- **生成后检查清单**：用例覆盖全部 Scenario 并含边界异常；测试代码用 Jest+@vue/test-utils v1 写法（非 Vitest/Vue3 语法）；mock 走 `http.js` 同源路径（mock `src/utils/http/http.js` 导出，非裸 axios）；执行证据新鲜（完成前验证铁律，`references/cross-cutting.md` 三）；用例文档状态已回写。
+- **用例审阅 Gate 置位（v1.4.0 起强制）**：Gate 通过后执行 `node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>`；已登记用例文档但未置位时，进入 ⑩ 会被 `validate` 阻断。回退返工用 `--unset` 复位后重走 Gate。
+- **生成后检查清单**：用例覆盖全部 Scenario 并含边界异常；测试代码用 Jest+@vue/test-utils v1 写法（非 Vitest/Vue3 语法）；mock 走 `http.js` 同源路径（mock `src/utils/http/http.js` 导出，非裸 axios）；执行证据新鲜（完成前验证铁律，`references/cross-cutting.md` 三）；用例文档状态已回写；**`testCasesConfirmed=true` 且 `testCasesDoc` 与本次用例文档一致**；**本次启动的 dev server / mock server 已回收（`fw-process check` 通过、端口释放）**。
 
 ### 5.6 TAPD 缺陷修复（`tapd-bugfix-workflow.md`，独立分支）
 
@@ -208,6 +213,28 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - **用途**：开工前把需求/方案的待决事项走成设计树，按 Frontier 轮次逐轮澄清（❓逐题编号 + ➡️每题推荐答案，每轮 ≤4 问，同一决策点最多追问 2 轮），产出共识清单后再进对应分支执行。
 - **本项目要点**：可自查的事实（技术栈 Vue2.6+Webpack、API 封装 `src/utils/http/http.js`、自定义指令清单等）agent 先自查不问用户；待决项（如业务文档方案、测试范围、起止阶段）才交用户拍板。澄清结论可直接作为 01~10 各模板的意图清单输入，不重复追问。
 
+### 5.9 本地进程登记与回收（`cross-cutting.md` 五，强制收尾）
+- **典型问题**：自测/复现时后台启动 `npm run serve-test` / dev server，验证完不回收 → 端口与 CPU 长期占用；Windows 上只杀 `cmd` 时 `node` 子进程仍占端口；下次自测连到旧进程导致「代码没生效却显示通过」。
+- **四步契约**：`register`（启动前登记）→ 启动并确认端口监听 → 执行测试/验证 → `cleanup` + `check`（端口释放）。
+- **命令**：
+
+```bash
+node scripts/fw-process.cjs register <任务名> --port 8088 --cmd "npm run serve-test"
+node scripts/fw-process.cjs check    <任务名>          # 0=无残留
+node scripts/fw-process.cjs cleanup  <任务名>          # 回收并校验端口
+node scripts/fw-process.cjs cleanup  <任务名> --all-tasks
+```
+
+- **强制回收点**：用例执行结束（含失败/中断）、阶段收尾、⑪/⑫ Gate 前、`finish-fw-workflow.cjs`（默认阻断残留，`--allow-residual-processes` 才放行）。
+- **本项目注意**：一次自测可能同时起多个服务（如 3030 前端 + 8088 插件 + 后端），**每个端口都要登记**；Playwright 跑完先 `check` 再继续下一个用例。
+
+### 5.10 v1.4.0 升级提示（状态机校验口径变化）
+
+1. **phase 3 业务文档**：不再只看 `openspec/` 或 `fw_dev_spec/` 目录是否存在。⑤ 完成后用 `create --biz-doc-path` 或 `set-fw-gate ... docConfirmed --biz-doc <路径>` 登记本次文档；未登记时回退「目录 + 最近 120 分钟 Markdown」，可能误判或漏判。
+2. **phase 0/7 代码阶段**：推进前要求 git 工作区存在代码文件变更（文档/依赖/构建产物不计）。纯配置/纯文档任务确无代码产出时，追加 `--allow-empty`（状态文件留痕，需向用户说明）。
+3. **3.5 用例审阅**：Gate 通过后必须置位 `testCasesConfirmed`，否则进入 ⑩ 被阻断；未执行 3.5 的任务不受影响（`testCasesDoc=null`）。
+4. **兼容性**：旧状态文件缺少新字段时自动降级，无需迁移；非 git 仓库的阶段 0/7 校验仅告警不阻断。
+
 ## 六、生成后检查清单（合并 Skill + 本项目规范）
 
 - [ ] 组件名符合规范（文件/组件小驼峰，本目录约定）
@@ -222,6 +249,8 @@ Skill 的默认示例多为 **Vue3 + TypeScript**，与本项目的实际栈不�
 - [ ] 异步组件处理了 loading/error/empty
 - [ ] 关键函数有 JSDoc 注释；无 ESLint 错误
 - [ ] Figma 还原通过了第十章 QA Checklist（如有设计稿）
+- [ ] 若执行了 3.5 测试：用例审阅 Gate 已置位（`testCasesConfirmed=true`）且 `testCasesDoc` 指向本次用例文档
+- [ ] 本次启动的本地服务已全部回收：`node scripts/fw-process.cjs check <任务名>` 通过，无遗留监听端口（cross-cutting.md 五）
 
 ## 七、边界与不确定处理（最高优先级）
 

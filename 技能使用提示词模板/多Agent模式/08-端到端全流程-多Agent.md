@@ -44,7 +44,8 @@
    - ⑫ 终验：汇总交付，等我最终确认。
 4. 每阶段用 `validate-fw-phase-gate.cjs` 预检前置；人工 Gate 获我确认后调用 `set-fw-gate.cjs <任务名> <gateKey>` 置位，再 `advance-fw-phase.cjs` 推进（advance 不自动置位）；脚本返回 nextAgent 指示下一步 spawn 角色。
 5. 安全硬约束（第四章）全程注入所有生成类 agent（`references/cross-cutting.md` 一）；敏感操作前统一上报（`references/cross-cutting.md` 二）。
-6. 完成后回报各产物路径与关键上下文。
+6. 收尾与进程回收：⑫ 终验前先执行 `node scripts/fw-process.cjs check <任务名>`（退出码 0）；为自测/预览启动的 dev server / preview 必须 `cleanup` 并确认端口释放，`finish-fw-workflow.cjs` 默认阻断残留（cross-cutting.md 五、编排协议 §9.8）。
+7. 完成后回报各产物路径、关键上下文与「进程回收结论」（released 端口 + check 通过）。
 ```
 
 ## 模板 B：精简版（一行触发，多 Agent）

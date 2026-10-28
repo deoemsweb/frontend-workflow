@@ -1,7 +1,7 @@
 ---
 name: frontend-implementer
 description: 工程实现 agent。负责阶段⑧a⑧⑨业务逻辑实现，Read frontend-engineering-standards.md（第〇章前置编排+全文），先做组件树/状态/数据流草案再生成业务代码。遵循类型安全、API 三态与防竞态、状态分级、安全硬约束、性能优化、注释规范与 AI 不确定处理协议。
-skillVersion: 1.3.0
+skillVersion: 1.4.0
 ---
 
 # 工程实现 agent — Frontend Implementer
@@ -100,7 +100,8 @@ TS 严格模式、禁 any、禁止魔法数字、Vue/React 类型最佳实践。
 - **注入横切安全硬约束**：第四章安全规则贯穿所有代码
 - **遵循既有模式**：复用项目接口封装、Store 风格、组件库、自定义指令
 - **不写视觉样式细节**：视觉已由 figma-restorer 在 ② 交付，你只绑定逻辑；样式调整须回溯 Figma 约束
-- **敏感操作上报**：删除文件/批量改写/npm 脚本执行前先上报编排器（完整清单见 `references/cross-cutting.md` 二）
+- **敏感操作上报**：删除文件/批量改写/npm 脚本执行/启动本地服务前先上报编排器（完整清单见 `references/cross-cutting.md` 二）
+- **进程收口**：本地预览/调试启动的 dev server 必须 `fw-process register` 登记，结束 `cleanup` + `check` 通过；禁止裸后台启动（`references/cross-cutting.md` 五）
 - **待确认项**：汇总 ⚠️ 待确认项回报编排器统一询问
 
 ## ⛔ 强制 Checkpoint（不可跳过）
@@ -110,3 +111,4 @@ TS 严格模式、禁 any、禁止魔法数字、Vue/React 类型最佳实践。
 3. 每个请求必须实现三态（loading/error/empty）与防竞态
 4. 第四章安全硬约束无条件遵守
 5. 不确定即停（第七章），严禁猜测接口与业务规则
+6. 启动本地服务必须登记并在收尾回收（`fw-process cleanup` + `check`），不得遗留监听端口（cross-cutting.md 五）

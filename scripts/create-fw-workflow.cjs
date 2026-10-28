@@ -3,13 +3,15 @@
  * create-fw-workflow.cjs — 初始化 frontend-workflow 多 agent 工作流状态文件
  *
  * 用法:
- *   node scripts/create-fw-workflow.cjs <任务名> [--start <内部phase>] [--title "<标题>"] [--biz-doc <openspec|fw-dev-spec|skip>]
+ *   node scripts/create-fw-workflow.cjs <任务名> [--start <内部phase>] [--title "<标题>"] [--biz-doc <openspec|fw-dev-spec|skip>] [--biz-doc-path <路径>]
  *
  * 参数:
- *   任务名       - 任务唯一标识（kebab-case，将作为状态文件名前缀）
- *   --start      - 起始内部 phase（0~10，默认 0）。跳过②③等场景使用，如已有静态页面则 --start 3
- *   --title      - 任务标题（展示用）
- *   --biz-doc    - 业务文档方案预选（openspec / fw-dev-spec / skip），写入状态供下游读取
+ *   任务名         - 任务唯一标识（kebab-case，将作为状态文件名前缀）
+ *   --start        - 起始内部 phase（0~10，默认 0）。跳过②③等场景使用，如已有静态页面则 --start 3
+ *   --title        - 任务标题（展示用）
+ *   --biz-doc      - 业务文档方案预选（openspec / fw-dev-spec / skip），写入状态供下游读取
+ *   --biz-doc-path - 本次业务文档路径（相对项目根；活文档文件或 openspec change 目录）。
+ *                    文档尚未产出时可先不传，⑤ 完成后用 set-fw-gate ... --biz-doc <路径> 登记
  *
  * 输出:
  *   成功 → 打印初始状态 JSON + 退出码 0
@@ -57,9 +59,15 @@ if (isNaN(startPhase) || startPhase < 0 || startPhase >= TOTAL_PHASES) {
 
 const title = getOpt('--title') || taskName
 const bizDoc = getOpt('--biz-doc') || null
+const bizDocPath = getOpt('--biz-doc-path') || null
 
 if (bizDoc && !['openspec', 'fw-dev-spec', 'skip'].includes(bizDoc)) {
   console.error(`--biz-doc 无效："${bizDoc}"，可选值：openspec | fw-dev-spec | skip`)
+  process.exit(1)
+}
+
+if (bizDocPath && bizDoc === 'skip') {
+  console.error('--biz-doc-path 与 --biz-doc skip 冲突：跳过业务文档时不应登记文档路径')
   process.exit(1)
 }
 
@@ -106,9 +114,13 @@ const state = {
     staticConfirmed: false,
     docConfirmed: false,
     apiConfirmed: false,
-    bizConfirmed: false
+    bizConfirmed: false,
+    testCasesConfirmed: false // 内嵌 Gate（3.5 用例审阅），不占 phase
   },
   bizDocPlan: bizDoc, // openspec | fw-dev-spec | skip | null(待⑤a确认)
+  bizDocPath, // 本次业务文档（相对项目根）；null = 未登记，phase 3 回退目录+时间窗口校验
+  testCasesDoc: null, // 本次测试用例文档；非 null 表示执行过 3.5，进入 ⑩ 前需置位 testCasesConfirmed
+  allowEmptyPhases: {}, // --allow-empty 留痕：{ [phase]: { at, reason } }
   pendingConfirmations: [],
   reviewLoopCount: { static: 0, prd: 0, impl: 0 }, // 回流计数（③⑥⑩），上限 3
   createdAt: now,

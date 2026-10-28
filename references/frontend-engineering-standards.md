@@ -800,3 +800,14 @@ const finalPriceInYuan =
 
 请逐个确认上述信息，我将据此继续还原。
 ```
+
+---
+
+## 八、本地服务的进程生命周期（调试与自测）
+
+实现与自测阶段启动的 dev server / preview / mock server 属**长驻进程**，必须遵守 `references/cross-cutting.md` 五（权威规则与脚本用法）：
+
+- **启动前登记**：`node scripts/fw-process.cjs register <任务名> --port <端口> --cmd "<命令>"`；端口已被占用时不得直接启动（可能连到旧代码）。
+- **优先受控启动**：`python scripts/testing/with_server.py`（自带端口预检 + 进程树回收 + 端口释放校验）；禁止 `Start-Process` / `nohup &` / `cmd /c start` 等裸后台启动。
+- **收尾必回收**：用例结束 / 阶段收尾 / 验证完成 → `cleanup` 后 `check` 必须通过；`finish-fw-workflow.cjs` 默认阻断残留。
+- **不得遗留**：任何"已完成 / 已验证"结论都不得附带仍在监听的本地端口。

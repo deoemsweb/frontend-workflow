@@ -194,6 +194,9 @@ options: { "entity_type": "bugs" }
 ### 4.5 修复验证
 
 修复完成后：
+0. **先回收本地自测进程**：若为复现/验证启动过 dev server / serve-test / mock server，执行
+   `node scripts/fw-process.cjs cleanup <任务名> && node scripts/fw-process.cjs check <任务名>`，
+   端口全部释放（check exit 0）后才进入下一步；回收结论记入计划文档（见 `references/cross-cutting.md` 五）。
 1. 将计划文档顶部「当前状态」更新为 `✅ 已完成 — 等待验证`
 2. 确认所有修复已通过 lint/type-check 检查（已在 4.1 中逐 Bug 执行）
 3. 汇总所有变更（前端修复 + 后端评论 + 需求评论 + 测试通知）
@@ -204,6 +207,8 @@ options: { "entity_type": "bugs" }
 ---
 
 ## 阶段五：验证通过后更新状态
+
+**前置检查**：更新状态前先确认本地无残留自测进程（`node scripts/fw-process.cjs check <任务名>` 退出码 0）；存在残留先 `cleanup`，避免"验证用服务"长期占用端口/资源。
 
 当用户确认验证通过后，调用 `mcp__tapd__update_bug` 将对应 Bug 状态更新为已解决（参数 schema 见 `references/tapd-tool-params.md`），`v_status` 使用中文状态名"已解决"，TAPD 自动映射为 `resolved`。
 
@@ -233,3 +238,4 @@ options: { "entity_type": "bugs" }
 5. 验证通过后才更新状态，修复阶段不自动改状态
 6. 前端代码修复须复用 `references/frontend-engineering-standards.md` 的工程规范与安全硬约束，UI 类 Bug 加 `references/figma-design-constraint.md`
 7. 修复完成后追加工作记录到项目 memory
+8. 本地启动的自测/复现服务必须登记并回收（`scripts/fw-process.cjs`），不得遗留 dev server 占用端口

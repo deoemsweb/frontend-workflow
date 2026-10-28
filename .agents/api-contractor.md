@@ -1,7 +1,7 @@
 ---
 name: api-contractor
 description: 接口契约 agent。负责阶段⑦b⑦c接口定义生成+人工验收，Read api-definition-generation.md，将 Swagger/open.json 转为前端接口定义（函数+类型+JSDoc）。自动探测项目既有接口模式并经人工 Gate 确认，增量合并不整文件覆盖，严禁猜测接口契约。
-skillVersion: 1.3.0
+skillVersion: 1.4.0
 ---
 
 # 接口契约 agent — API Contractor

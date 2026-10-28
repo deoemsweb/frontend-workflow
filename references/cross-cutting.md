@@ -1,7 +1,7 @@
-# 横切约束共享块（安全硬约束 + 敏感操作清单）
+# 横切约束共享块（安全硬约束 + 进程回收 + 验证铁律 + 敏感操作清单）
 
-> 本文件是 frontend-workflow 各 `.agents/` 角色文件与编排协议的**共享引用**，用于消除"安全硬约束 / 敏感操作清单"在 7+ 处复制导致的漂移。
-> 权威定义来源：`references/multi-agent-orchestration.md` §六（敏感操作统一询问清单）、§七（横切安全硬约束注入）、`references/frontend-engineering-standards.md` 第四章（安全规则正文）。
+> 本文件是 frontend-workflow 各 `.agents/` 角色文件与编排协议的**共享引用**，用于消除"安全硬约束 / 进程回收 / 验证铁律 / 敏感操作清单"在多处复制导致的漂移。
+> 权威定义来源：`references/multi-agent-orchestration.md` §六（敏感操作统一询问清单）、§七（横切安全硬约束注入）、`references/frontend-engineering-standards.md` 第四章（安全规则正文）、本文件第五章（进程生命周期，实现见 `scripts/fw-process.cjs`）。
 > 使用约定：各角色文件只保留一行指针"遵守 `references/cross-cutting.md`"，不再内联复制；本文件变更时同步登记 CHANGELOG。
 
 ---
@@ -26,6 +26,7 @@
 | 文件破坏 | 删除文件 / 整文件覆盖写 / 批量替换（影响 >3 个文件） |
 | TAPD 写操作 | `update_bug`（状态变更）/ `create_comments`（发评论 @人） |
 | 命令执行 | `npm` / `npx` 脚本（install / lint --fix / build / test）、其他有副作用的 shell 命令 |
+| 长驻进程 | 启动 dev server / preview / mock server / 后台命令（**启动须询问**）；回收动作（`cleanup`）属强制收尾，必须执行、不需再次询问 |
 | 部署 | 任何构建、发布、云端部署触发 |
 
 - 询问时须说明：**要做什么、影响哪些文件/对象、是否可逆**。用户确认后方可执行。
@@ -70,3 +71,55 @@ qa-reviewer（③⑥⑩）为只读角色，工具白名单按**语义**定义�
 - 允许：命令执行工具，仅限只读命令（lint、grep、cat、tsc --noEmit、npm run lint 等）
 - 禁止：任何写文件 / 替换内容 / 删除文件工具；命令执行中的任何写操作（rm、git commit、npm install 写入等）
 - 偏差与修复建议只能回传给编排器（由编排器落盘为偏差报告），不得自行修改源码
+
+## 五、进程生命周期与资源回收（全角色硬约束）
+
+> **背景**：本地自测（dev server / preview / mock server / 静态服务）若以「后台启动」方式拉起且结束后不回收，会持续占用端口与 CPU/内存；更危险的是**下次自测连到旧进程**，代码没生效却显示"通过"，形成假绿。Windows 上 `terminate()` 只杀 `cmd`/shell，`node` 子进程会残留占住端口，是最常见的泄漏形态。
+>
+> **权威实现**：`scripts/fw-process.cjs`（登记/校验/回收）+ `scripts/testing/with_server.py`（受控启动，自带回收）。
+
+### 5.1 生命周期契约（四步，缺一不可）
+
+```
+register（启动前登记端口+命令） → 启动并确认端口监听 → register（补 PID） → 执行自测/验证 → cleanup（回收 + 校验端口释放）
+```
+
+| 步骤 | 要求 | 命令 |
+|------|------|------|
+| 登记 | 启动**前**登记端口 + 命令；启动后**再次 `register` 同一端口补 PID**（脚本会自动反查并更新原条目） | `node scripts/fw-process.cjs register <任务名> --port <端口> --cmd "<命令>"` |
+| 启动 | 优先受控启动器；多实例禁止同端口 | `python scripts/testing/with_server.py --server "<cmd>" --port <端口> -- <测试命令>` |
+| 回收 | 用例结束 / 阶段收尾 / Gate 通过后 / 工作流收尾，**任一发生即回收** | `node scripts/fw-process.cjs cleanup <任务名>` |
+| 校验 | 回收后必须确认端口已释放（不能只看 kill 返回码） | `node scripts/fw-process.cjs check <任务名>` |
+
+### 5.2 禁止事项
+
+1. **禁止裸后台启动**：`Start-Process` / `nohup … &` / `cmd /c start` / `&` 后台运算符 / `subprocess.Popen(shell=True)` 直接跑 dev server 而不登记。
+2. **禁止同端口重复启动**：启动前必须预检；端口已占用时先判断是否本任务残留 → 回收，不得直接再启一个。
+3. **禁止把「进程还在跑」当作交付状态**：不得在收尾结论中遗留 dev server / preview / 浏览器调试端口。
+4. **禁止用「kill 返回 0」代替验证**：必须实际探测端口（`with_server.py` 已内置；手工场景用 `fw-process check`）。
+5. **禁止跨任务复用未登记进程**：来源不明的监听端口不得直接用来做验证（可能跑的是旧代码）。
+
+### 5.3 强制回收点（必须执行，不可延后）
+
+| 时点 | 动作 |
+|------|------|
+| E2E / 用例执行结束（成功、失败、异常、Ctrl+C 均含） | `cleanup`；`with_server.py` 的 `finally` 已自动处理 |
+| ⑩ 检查 / ⑪ 人工验收前 | `check` 必须 pass，残留先 `cleanup` |
+| `finish-fw-workflow.cjs` 收尾 | 脚本默认阻断残留；确需保留传 `--allow-residual-processes` |
+| 会话结束 / 用户中断 | `cleanup --all-tasks` 兜底清理本机所有本 skill 登记的进程 |
+
+```bash
+node scripts/fw-process.cjs check   <任务名>          # 残留校验（0=无残留，1=有残留）
+node scripts/fw-process.cjs cleanup <任务名>          # 回收本任务全部登记进程并校验端口
+node scripts/fw-process.cjs cleanup <任务名> --dry-run # 只打印将终止的 PID
+node scripts/fw-process.cjs cleanup <任务名> --all-tasks # 跨任务兜底清理
+```
+
+### 5.4 异常与降级
+
+- **登记时反查不到 PID**：仍可登记，`cleanup` 会按端口兜底回收；须在结论中说明该端口由本任务独占。
+- **回收失败**（端口仍被占用）：不得静默通过，必须向用户报告 `端口 / PID / 命令` 清单并请求人工处理。
+- **端口被非本任务进程占用**：不直接杀，改用其他空闲端口并在结论中记录冲突。
+- **无法回收又必须结束时**：只能标记「待清理」，不得宣称"已完成 / 已验证"。
+
+> 任何角色（含只读的 qa-reviewer）都可以执行 `check`（只读探测）；`cleanup` 属强制收尾动作，不需要再向用户二次确认，但必须在结论中报告回收结果。

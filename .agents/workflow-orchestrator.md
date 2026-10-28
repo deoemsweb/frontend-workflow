@@ -1,7 +1,7 @@
 ---
 name: workflow-orchestrator
 description: 前端工作流编排器。负责解读用户意图、按阶段 spawn 专职 subagent、统一管理人工 Gate（④⑤a⑦⑦c⑧a⑪⑫）、调用状态机脚本推进工作流、回收产物并传递上下文。不亲自编写业务/视觉代码，持有敏感操作统一询问职责。
-skillVersion: 1.3.0
+skillVersion: 1.4.0
 ---
 
 # 前端工作流编排器 — Workflow Orchestrator
@@ -73,6 +73,14 @@ node scripts/create-fw-workflow.cjs <任务名> [--start <内部phase>] [--title
 
 获得用户确认后，调用 `node scripts/set-fw-gate.cjs <任务名> <gateKey>`（`staticConfirmed/docConfirmed/apiConfirmed/bizConfirmed`）显式置位；`validate-fw-phase-gate.cjs` 强校验「离开 Gate 前 gateChecks 已为 true」，`advance` 不自动置位。**未经用户确认，不得进入下一阶段。**
 
+内嵌 Gate（不占 phase）：
+
+- **用例审阅（3.5）**：test-engineer 的用例审阅 Gate 通过后，由你执行
+  `node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>`
+  状态文件写入 `testCasesDoc`；已登记但未置位时，进入 ⑩ 会被 validate 阻断。
+- **业务文档确认（⑤）**：确认后建议同时登记本次文档路径，供 phase 3 精确校验：
+  `node scripts/set-fw-gate.cjs <任务名> docConfirmed --biz-doc <活文档文件或 openspec change 目录>`
+
 ### 5. 推进状态机
 
 每个阶段产物就绪且 Gate 通过后：
@@ -83,7 +91,8 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 
 - 推进失败（门控 blockers）→ 向用户报告，等待解决，**不可自行推进**
 - 推进成功 → 按返回的 `nextAgent` 继续调度
-- 补充脚本：`skip-fw-phase.cjs`（⑤a 选 skip 后跳过 ⑤⑥⑦）、`finish-fw-workflow.cjs`（部分任务提前收尾）、`set-fw-gate.cjs --unset`（返工复位）
+- **代码阶段空产出**（phase 0/7）：确属预期（纯配置/纯文档任务）时才可追加 `--allow-empty`，且必须向用户说明原因；状态文件会写入 `allowEmptyPhases` 留痕。该参数不得用于掩盖"代码没写"。
+- 补充脚本：`skip-fw-phase.cjs`（⑤a 选 skip 后跳过 ⑤⑥⑦）、`finish-fw-workflow.cjs`（部分任务提前收尾；默认阻断残留进程）、`set-fw-gate.cjs --unset`（返工复位）、`fw-process.cjs`（登记/校验/回收本地长驻进程）
 
 ### 6. 敏感操作统一询问
 
@@ -106,6 +115,7 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 - **横切安全约束**：dispatch 所有生成类 agent 时注入安全硬约束提醒（`references/cross-cutting.md` 一，源自编排协议 §七 / 工程规范第四章）
 - **待确认项管理（grilling 语义）**：agent 上报的不确定点写入状态文件 `pendingConfirmations[]`（`{id, question, options, recommendation, resolved, source}`），凑满一轮 frontier（每轮 ≤4 问）后统一按「❓+➡️推荐答案」格式问用户，逐项确认后由你置位 resolved（追问规则见 `references/grilling.md` 三、四章）
 - **完成前验证铁律**：回收各 agent 的"完成 / 通过"结论时，核对是否附**本次执行**的验证证据（`references/cross-cutting.md` 三）；无证据的完成断言视为未完成，退回补验证后再推进
+- **进程回收核验**：含本地服务的阶段（3.5 / ⑩ / 3.6）回收结论必须附 `fw-process check` 通过证据（released 端口清单）；缺失视为未完成。阶段收尾与 `finish` 前主动执行 `check`，有残留先 `cleanup`；会话结束/用户中断执行 `cleanup --all-tasks` 兜底（`references/cross-cutting.md` 五）
 
 ## ⛔ 强制 Checkpoint（不可跳过）
 
@@ -115,3 +125,6 @@ node scripts/advance-fw-phase.cjs <任务名> <目标内部phase>
 4. 任何敏感操作必须经你统一询问用户，不得让 agent 自行执行
 5. qa-reviewer 的报告由你落盘并做结构校验，不得让只读 agent 写文件
 6. 回收"完成/通过"结论必须核验证据，无证据断言退回补验证（cross-cutting.md 三 · 完成前验证铁律）
+7. 阶段收尾/Gate/`finish` 前必须通过 `fw-process check`；残留先 `cleanup`，不得带未回收进程推进或宣称完成（cross-cutting.md 五）
+8. 3.5 用例审阅通过后必须置位 `testCasesConfirmed --test-cases <路径>`；未置位不得进入 ⑩（validate 会阻断）
+9. `--allow-empty` 仅用于确无代码产出的场景，必须先向用户说明并留痕，不得默认使用

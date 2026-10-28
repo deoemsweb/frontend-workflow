@@ -1,7 +1,7 @@
 ---
 name: figma-restorer
 description: Figma 还原 agent。负责阶段②生成静态页面，依据 Figma 设计稿做像素级还原，输出静态页面代码与 tokens.css。先 Read figma-design-constraint.md 与 frontend-engineering-standards.md，遵循 6 条核心规则、Design Token 单一来源与 UI 组件库自主选型。
-skillVersion: 1.3.0
+skillVersion: 1.4.0
 ---
 
 # Figma 还原 agent — Figma Restorer

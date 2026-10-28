@@ -1,6 +1,6 @@
 # frontend-workflow
 
-> 当前版本：**v1.3.0**（版本号权威来源见 `SKILL.md` 的 `version` 字段，变更记录见 `CHANGELOG.md`）
+> 当前版本：**v1.4.0**（版本号权威来源见 `SKILL.md` 的 `version` 字段；面向使用者的版本记录见 `VERSION.md`，技术流水见 `CHANGELOG.md`）
 
 前端开发工作流**单一 Skill**。将原先分散的能力（Figma 还原约束、原型→OpenSpec PRD、前端工程规范、Swagger→接口定义生成、测试与用例生成、TAPD 缺陷修复、开发计划活文档）合并为一个可一次安装的 skill：路由逻辑集中在 `SKILL.md`，领域规则拆到 `references/` 子文件，按运行时需求读取，兼顾「一次安装」与「上下文不臃肿」。
 
@@ -38,19 +38,21 @@ frontend-workflow/                  # 单一 skill 目录（= 安装单元）
 │   │   └── examples/                # Playwright 示例：元素发现 / 静态页 / console 捕获
 │   ├── extract_workspace_id.py      # 从 TAPD 实体 ID 提取 workspace_id
 │   ├── workflow-state-utils.cjs     # 多 agent 状态机公共工具（phase 映射/状态读写/产物检查）
-│   ├── create-fw-workflow.cjs       # 初始化多 agent 工作流状态文件（--start / --biz-doc）
-│   ├── validate-fw-phase-gate.cjs   # 阶段门控验证（含人工 Gate 的 gateChecks 强校验）
-│   ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent，不自动置位 Gate）
+│   ├── create-fw-workflow.cjs       # 初始化工作流状态（--start / --biz-doc / --biz-doc-path）
+│   ├── validate-fw-phase-gate.cjs   # 阶段门控验证（产物 / Gate / testCasesConfirmed / --allow-empty）
+│   ├── advance-fw-phase.cjs         # 阶段推进（返回 nextAgent，不自动置位 Gate；--allow-empty 留痕）
 │   ├── rollback-fw-phase.cjs        # 阶段回退（返工，仅后向，拒绝 skipped 目标）
 │   ├── set-fw-gate.cjs              # 人工 Gate 显式置位（用户确认后调用）
 │   ├── skip-fw-phase.cjs            # 阶段显式跳过（biz-doc=skip 场景）
-│   ├── finish-fw-workflow.cjs       # 提前完成收尾（避免状态永久 running）
-│   ├── smoke-fw-scripts.cjs         # 状态机脚本冒烟测试（临时目录全链路回归）
+│   ├── finish-fw-workflow.cjs       # 提前完成收尾（默认阻断残留进程）
+│   ├── fw-process.cjs               # 本地长驻进程登记/校验/回收（dev server 端口泄漏治理）
+│   ├── smoke-fw-scripts.cjs         # 状态机脚本冒烟测试（61 项断言，临时目录全链路回归）
 │   └── sync-fw-openspec.cjs         # fw-dev-spec 活文档 ↔ OpenSpec 关联：init/sync/check（可选关联模式）
-├── 技能使用提示词模板/              # 用户侧提示词模板（单Agent模式 01~10 / 多Agent模式 01~09 + 00-模板骨架）
+├── 技能使用提示词模板/              # 用户侧提示词模板（单Agent模式 01~11 / 多Agent模式 01~09 + 00-模板骨架）
 ├── frontend-workflow-usage.md       # 项目适配手册（示例项目：userlive Vue2.6）
-├── CHANGELOG.md                     # 版本变更历史
-└── README.md                        # 本文件
+├── VERSION.md                       # 版本更新记录（面向使用者：目标/变更点/影响文件/验证/升级动作）
+├── CHANGELOG.md                     # 技术变更流水（Added/Changed/Fixed）
+└── README.md                        # 本文件（模板/脚本清单的唯一来源）
 ```
 
 ## 能力索引
@@ -61,11 +63,12 @@ frontend-workflow/                  # 单一 skill 目录（= 安装单元）
 | 原型→PRD | `references/prototype-to-openspec-prd.md` | 设计原型（Figma 或 .md 需求文档）→ OpenSpec 需求规范（specs / proposal / design / tasks）与拆解策略 |
 | 工程规范 | `references/frontend-engineering-standards.md` | 类型安全、API 集成、状态管理、安全约束、性能优化、注释文档、AI 不确定时处理 |
 | 接口定义生成 | `references/api-definition-generation.md` | Swagger/open.json → 前端接口定义（函数+类型+JSDoc），自动探测项目既有接口模式并按其风格生成 |
-| 测试与用例生成 | `references/testing.md` | 测试用例生成两段式（业务文档→用例文档→人工 Gate→可执行代码）+ 单元 / 组件 / E2E（Playwright 执行层 `scripts/testing/`）/ 视觉回归；定位为主流程可选环节（⑨→⑩ 之间，由 test-engineer 执行）；执行受 `cross-cutting.md` 完成前验证铁律约束 |
+| 测试与用例生成 | `references/testing.md` | 测试用例生成两段式（业务文档→用例文档→人工 Gate→可执行代码）+ 单元 / 组件 / E2E（Playwright 执行层 `scripts/testing/`）/ 视觉回归；定位为主流程可选插槽（⑨→⑩ 之间，由 test-engineer 执行）；用例审阅通过后置位 `testCasesConfirmed` 并登记 `testCasesDoc`，进入 ⑩ 前强校验；执行受 `cross-cutting.md` 完成前验证铁律约束 |
 | 缺陷修复（独立分支） | `references/tapd-bugfix-workflow.md` | TAPD 缺陷修复全流程：提取 workspace_id → 读筛选缺陷 → 生成活文档计划 → 执行修复/发评论 → 验证后更新状态；前端代码修复复用工程规范 |
 | 开发计划活文档（独立分支，3.2 替代） | `references/fw-dev-spec.md` | 原型（Figma / .md）→ 本地分层活文档（fw_dev_spec/<需求名-日期>/）：Figma 先转 .md 原型审阅后存、五模块统一规范、单/多文档询问；替代 OpenSpec PRD 供 ⑧⑨ 使用，复用活文档进度约定；可选「OpenSpec 关联模式」开启后单向同步到 OpenSpec 并建立双向锚点（见 fw-dev-spec.md 第九章） |
 | 多 agent 编排（可选模式） | `references/multi-agent-orchestration.md` | 8 个 `.agents/` 角色协作：编排器按阶段 spawn 专职 agent，状态机门控推进、人工 Gate 统一管理、敏感操作统一询问 |
 | 需求拷问澄清（前置，3.10） | `references/grilling.md` | 全局追问协议：设计树 / Frontier 轮次（❓逐题编号 + ➡️每题推荐答案）/ 收敛护栏（每轮≤4问、同点≤2轮）/ 事实自查 vs 决策归用户；统一接入 2.1 意图解读、人工 Gate 与角色不确定上报 |
+| 本地进程回收（横切，3.11） | `references/cross-cutting.md` 五 + `scripts/fw-process.cjs` | 本地自测进程四步契约（register → 启动 → 执行 → cleanup + check）：端口预检、进程树回收（Windows 下杀 shell 会残留 node）、端口释放校验、`finish` 默认阻断残留；`with_server.py` 已内置该保证 |
 
 > 各 `references/*.md` 仍可独立 `Read` 使用，不经过 `SKILL.md` 路由。
 
@@ -92,17 +95,21 @@ frontend-workflow/                  # 单一 skill 目录（= 安装单元）
 **状态机脚本**（`scripts/`，由编排器调用）：
 
 ```bash
-node scripts/create-fw-workflow.cjs <任务名> [--start <phase>] [--title "..."] [--biz-doc <openspec|fw-dev-spec|skip>]  # 初始化
-node scripts/validate-fw-phase-gate.cjs <任务名> <目标phase>                     # 门控预检（含 Gate 强校验）
-node scripts/advance-fw-phase.cjs <任务名> <目标phase>                           # 推进并返回 nextAgent（不自动置位 Gate）
-node scripts/set-fw-gate.cjs <任务名> <gateKey>                                  # 人工 Gate 置位（用户确认后）
+node scripts/create-fw-workflow.cjs <任务名> [--start <phase>] [--biz-doc <openspec|fw-dev-spec|skip>] [--biz-doc-path <路径>]  # 初始化
+node scripts/validate-fw-phase-gate.cjs <任务名> <目标phase> [--allow-empty]     # 门控预检（产物 / Gate / 用例门控）
+node scripts/advance-fw-phase.cjs <任务名> <目标phase> [--allow-empty]           # 推进并返回 nextAgent（不自动置位 Gate）
+node scripts/set-fw-gate.cjs <任务名> <gateKey> [--unset] [--biz-doc <路径>] [--test-cases <路径>]  # 人工 Gate 置位
 node scripts/rollback-fw-phase.cjs <任务名> <目标phase>                          # 阶段回退（返工）
 node scripts/skip-fw-phase.cjs <任务名> 3 4 5                                    # 阶段跳过（biz-doc=skip）
-node scripts/finish-fw-workflow.cjs <任务名>                                     # 提前完成收尾
-node scripts/smoke-fw-scripts.cjs                                                # 脚本冒烟测试
+node scripts/finish-fw-workflow.cjs <任务名> [--allow-residual-processes]        # 提前完成收尾（默认阻断残留进程）
+node scripts/fw-process.cjs register|list|check|cleanup <任务名> ...              # 本地长驻进程登记/校验/回收
+node scripts/smoke-fw-scripts.cjs                                                # 脚本冒烟测试（61 项）
 ```
 
-**协作约定**：编排器不亲自写生成类代码；人工 Gate ④⑤a⑦⑦c⑧a⑪⑫ 由编排器统一持有、用户确认后调用 `set-fw-gate.cjs` 置位再推进（`advance` 不自动置位，未置位会被门控阻断）；检查 agent 只读、报告由编排器落盘；回流上限 3 次；横切安全约束注入所有生成类 agent（`references/cross-cutting.md`）；敏感操作（git/删除/批量替换/TAPD 写操作/npm 脚本/部署）由编排器统一询问用户。
+- `gateKey`：`staticConfirmed` / `docConfirmed` / `apiConfirmed` / `bizConfirmed` / `testCasesConfirmed`（最后一个为内嵌 Gate，不占 phase，置位时必须带 `--test-cases`）
+- `--allow-empty`：phase 0/7 无代码变更时显式放行，写入 `allowEmptyPhases` 留痕
+
+**协作约定**：编排器不亲自写生成类代码；人工 Gate ④⑤a⑦⑦c⑧a⑪⑫ 由编排器统一持有、用户确认后调用 `set-fw-gate.cjs` 置位再推进（`advance` 不自动置位，未置位会被门控阻断）；3.5 用例审阅为内嵌 Gate，通过后置位 `testCasesConfirmed --test-cases <路径>`；检查 agent 只读、报告由编排器落盘；回流上限 3 次；横切安全约束注入所有生成类 agent（`references/cross-cutting.md`）；敏感操作（git/删除/批量替换/TAPD 写操作/npm 脚本/长驻进程启动/部署）由编排器统一询问用户；本地长驻进程启动前须 `fw-process register` 登记、收尾必 `cleanup` + `check`（`finish` 默认阻断残留）；`--allow-empty` 仅用于确无代码产出且需向用户说明。
 
 ## 前端开发工作流
 
@@ -120,12 +127,13 @@ Figma 设计稿
   ▼ ⑦b⑦c 接口定义生成+人工验收  · api-definition-generation（Swagger→函数/类型/JSDoc，自动探测项目模式）【确认 Gate·人工】
   ▼ ⑧ 设计桥梁：组件树 / 状态 / 数据流草案     · frontend-engineering-standards
   ▼ ⑨ 生成业务逻辑并绑定静态页面              · frontend-engineering-standards
+  ▼（可选插槽）3.5 测试：用例文档 → 人工 Gate → 测试代码/执行   · testing（不占 phase，Gate 需置位）
   ▼ ⑩ 检查 Agent 跑工程硬约束 + 非功能质量      【检查】最多 3 次回流
   ▼ ⑪ 人工验收业务规则                        【确认 Gate·人工】
   ▼ ⑫ 终验
 ```
 
-**协作约定**：检查 Agent 只读、不写代码；回流上限 3 次，超出转人工介入；上下文在生成/检查间共享（Figma 节点 ID、代码片段、Swagger 路径、接口模式画像、上一轮报告）；确认 Gate ④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认（多 agent 下经 set-fw-gate.cjs 置位）。
+**协作约定**：检查 Agent 只读、不写代码；回流上限 3 次，超出转人工介入；上下文在生成/检查间共享（Figma 节点 ID、代码片段、Swagger 路径、接口模式画像、上一轮报告）；确认 Gate ④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认（多 agent 下经 set-fw-gate.cjs 置位）；⑨→⑩ 之间的 3.5 测试为可选插槽，插入时用例审阅 Gate 通过后需置位 `testCasesConfirmed`。
 
 ## 安装
 

@@ -58,9 +58,11 @@
 | 9 | ⑪ | 人工 Gate | orchestrator | `gateChecks.bizConfirmed=true` | ✅ |
 | 10 | ⑫ | 终验 | orchestrator | 交付 | ✅ |
 
-> **人工 Gate 内嵌说明**：⑤a（业务文档方案确认）由**编排器**在 phase 3 内先行与用户确认后置位；⑦b「模式确认」（接口模式画像确认，api-contractor 流程第 3 步）为 ⑦b 内嵌 Gate；⑧a（第〇章前置编排）由 frontend-implementer 在其 reference 流程内暂停询问，经编排器向用户确认。三者均不单独占内部 phase。
+> **人工 Gate 内嵌说明**：⑤a（业务文档方案确认）由**编排器**在 phase 3 内先行与用户确认后置位；⑦b「模式确认」（接口模式画像确认，api-contractor 流程第 3 步）为 ⑦b 内嵌 Gate；⑧a（第〇章前置编排）由 frontend-implementer 在其 reference 流程内暂停询问，经编排器向用户确认；**用例审阅 Gate（3.5）** 通过后由编排器执行 `set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>` 置位。上述 Gate 均不单独占内部 phase。
 >
-> **代码类产物不强制文件校验**（phase 0/7）：与 jz 的"代码变更（git diff）不校验"一致，代码正确性交由 qa-reviewer 检查 + 后续人工 Gate 把关。
+> **phase 0/7 代码产物弱校验**：推进前校验 git 工作区存在代码文件变更（过滤文档 / 依赖 / 构建产物；未跟踪目录展开到文件）；确无代码产出时显式追加 `--allow-empty`，并在状态文件 `allowEmptyPhases` 留痕；非 git 仓库降级为 warning。代码正确性仍由 qa-reviewer + 人工 Gate 把关。
+>
+> **phase 3 业务文档精确校验**：优先校验状态文件 `bizDocPath`（⑤ 完成后经 `set-fw-gate ... docConfirmed --biz-doc <路径>` 登记）；未登记时回退「目录 + 最近 120 分钟内有 Markdown 修改」，并输出 warning 提示补登记。
 
 ---
 
@@ -90,6 +92,7 @@
 | 产物 | 路径 | 命名 |
 |------|------|------|
 | 工作流状态文件 | `.codebuddy/plans/` | `<任务名>-fw-state.json` |
+| 进程登记文件 | `.codebuddy/plans/` | `<任务名>-fw-processes.json`（`fw-process.cjs` 维护） |
 | 静态页面偏差报告 | `.codebuddy/plans/` | `<任务名>-review-static.md` |
 | 业务文档偏差报告 | `.codebuddy/plans/` | `<任务名>-review-prd.md` |
 | 业务代码偏差报告 | `.codebuddy/plans/` | `<任务名>-review-impl.md` |
@@ -111,6 +114,7 @@
 | 文件破坏 | 删除文件 / 整文件覆盖写 / 批量替换（影响 >3 个文件） |
 | TAPD 写操作 | `update_bug`（状态变更）/ `create_comments`（发评论 @人） |
 | 命令执行 | `npm` / `npx` 脚本（install / lint --fix / build / test）、其他有副作用的 shell 命令 |
+| 长驻进程 | dev server / preview / mock server / 后台命令启动（**启动须询问**）；回收动作（`fw-process cleanup`）属强制收尾，不询问但必须执行并回报结果 |
 | 部署 | 任何构建、发布、云端部署触发 |
 
 > 询问时须说明：**要做什么、影响哪些文件/对象、是否可逆**。用户确认后方可执行。编排器持有最终询问职责，各 agent 遇敏感操作先上报编排器，由编排器统一向用户询问。
@@ -158,6 +162,12 @@
 - 遇敏感操作先上报，不得自行执行（见 §六）
 - 遇"严禁猜测"情形（接口契约/业务规则/字段含义不明、范围歧义）：**事实先自查**，确需用户裁决的决策按 `references/grilling.md` 上报编排器（含选项与推荐答案），不得自行向用户发问、不得带假设继续执行
 - 完成后回报产物路径与关键上下文，供编排器推进状态机
+
+【进程与资源约束】（启动任何本地服务的 agent 必读，见 `references/cross-cutting.md` 五）
+- 启动 dev server / preview / mock server 前先登记：node scripts/fw-process.cjs register <任务名> --port <端口> --cmd "<命令>"
+- 优先用 python scripts/testing/with_server.py 受控启动（自带端口预检与回收）；禁止裸后台启动
+- 收尾必须回收并校验：node scripts/fw-process.cjs cleanup <任务名> && node scripts/fw-process.cjs check <任务名>
+- 回报中必须附「回收结论」（released 端口 + check 通过）；存在残留不得宣称完成
 ```
 
 ### 8.1 qa-reviewer 专用：只读语义白名单（硬约束，按宿主映射工具名）
@@ -192,7 +202,7 @@ spawn **qa-reviewer** 时，上述模板的「约束」块**替换为**以下只
 
 ## 九、状态机使用说明
 
-九个脚本位于 `scripts/`，由编排器（或其辅助）通过命令执行工具调用（`execute_command` / `pwsh` 等，按宿主）。原则："**AI 负责认知，脚本负责执行**"——确定性校验交给脚本，判断与生成交给 agent。
+状态机与资源脚本位于 `scripts/`，由编排器（或其辅助）通过命令执行工具调用（`execute_command` / `pwsh` 等，按宿主）。原则："**AI 负责认知，脚本负责执行**"——确定性校验交给脚本，判断与生成交给 agent。
 
 ### 9.1 初始化工作流
 
@@ -236,6 +246,19 @@ node scripts/set-fw-gate.cjs <任务名> <gateKey> --unset # 回退返工时复�
 - `advance-fw-phase.cjs` **不自动置位** Gate；置位只有通过本脚本（或等价的人工确认记录）完成
 - 置位记录写入状态文件 `gate_<gateKey>.{value,at}` 供事后审计
 
+内嵌 Gate（不占 phase）与产物路径登记：
+
+```bash
+# 用例审阅 Gate（3.5）：必须带 --test-cases，供进入 ⑩ 前追溯
+node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>
+
+# 业务文档确认（⑤ 完成后登记本次文档路径，phase 3 精确校验）
+node scripts/set-fw-gate.cjs <任务名> docConfirmed --biz-doc <活文档文件或 openspec change 目录>
+```
+
+- `testCasesConfirmed` 无对应 phase，输出「内嵌 Gate（不占 phase）」；`validate` 在 `target ≥ 8` 且 `testCasesDoc` 非空时强校验该键；
+- `--test-cases` / `--biz-doc` 与 gateKey 错配时脚本直接报错，避免写错字段。
+
 ### 9.5 待确认项管理（grilling 语义）
 
 需求/方案中的模糊点写入状态文件 `pendingConfirmations[]`，schema 为 `{ id, question, options, recommendation, resolved, source }`——`question` 为决策问题，`options` 为可选项，`recommendation` 为基于已探查事实的推荐答案（承接 `references/grilling.md` 的 frontier 轮次格式）。
@@ -267,6 +290,13 @@ node scripts/skip-fw-phase.cjs <任务名> 3 4 5
 ```
 
   已完成（completed）阶段不可跳过；跳过人工 Gate 阶段时其 gateChecks 同步复位；若跳过的是当前阶段，自动前进到下一个未 skipped 的 phase。
+- **代码阶段空产出放行**（phase 0/7 无工作区变更但确属预期，如纯配置/纯文档任务）：
+
+```bash
+node scripts/advance-fw-phase.cjs <任务名> <目标phase> --allow-empty
+```
+
+  放行后状态文件写入 `allowEmptyPhases[phase] = { at, reason }` 留痕；不得用于掩盖"代码没写"。validate 单独调用时同样支持 `--allow-empty`。
 - **提前完成**（如接口-only 任务走完 ⑦b⑦c、静态页-only 任务走完 ④ 后收尾）：
 
 ```bash
@@ -274,7 +304,26 @@ node scripts/finish-fw-workflow.cjs <任务名>
 ```
 
   将剩余未完成阶段标记 skipped、终验置 completed、工作流 status=completed，避免状态文件永久 running。
-- **冒烟测试**：改动状态机脚本后可运行 `node scripts/smoke-fw-scripts.cjs`（临时目录全链路回归，34 项断言）。
+- **冒烟测试**：改动状态机脚本后可运行 `node scripts/smoke-fw-scripts.cjs`（临时目录全链路回归，含状态机主链路 + bizdoc/workspace 校验 + 用例门控 + 进程登记/回收/收尾阻断，当前 61 项断言）。
+
+### 9.8 收尾与资源回收（进程）
+
+本地自测（dev server / preview / mock server）必须登记并回收，规则见 `references/cross-cutting.md` 五，实现见 `scripts/fw-process.cjs`。
+
+```bash
+node scripts/fw-process.cjs register <任务名> --port <端口> --cmd "<命令>"   # 启动前登记
+node scripts/fw-process.cjs list     <任务名>                              # 查看登记与存活状态
+node scripts/fw-process.cjs check    <任务名>                              # 残留校验（0=无残留）
+node scripts/fw-process.cjs cleanup  <任务名>                              # 回收并校验端口释放
+node scripts/fw-process.cjs cleanup  <任务名> --all-tasks                  # 跨任务兜底清理
+```
+
+编排器职责：
+
+1. dispatch 含本地服务的阶段（3.5 测试、⑩ 检查、3.6 缺陷验证）时，注入上文 dispatch 模板的「进程与资源约束」块；
+2. 回收各 agent 结论时核验「回收结论」（released 端口 + `check` 通过），缺失视为未完成；
+3. `finish-fw-workflow.cjs` 默认阻断残留进程（`--allow-residual-processes` 可显式放行，需向用户说明）；
+4. 会话结束/用户中断时执行 `cleanup --all-tasks` 兜底，避免端口与 CPU 长期占用。
 
 ---
 
@@ -300,13 +349,14 @@ node scripts/finish-fw-workflow.cjs <任务名>
 
 - **3.6 TAPD 缺陷修复**：不进 ②~⑫ 主流程状态机。编排器路由到 tapd-bugfixer，由其对 `.bugfix-workflow/` 活文档做断点恢复，自带人工 Gate（缺陷筛选确认、验证后更新状态）。
 - **3.7 fw-dev-spec 单独触发**：作为 PRD 产出单独使用时，由 prd-analyst 执行，产物供后续 ⑧⑨ 经第〇章探测接入。
-- **3.5 测试（可选环节，正式）**：定位为主流程可选环节，插在 ⑨→⑩ 之间，由 test-engineer 执行，规则以 `testing.md` 为准。采用**两段式**：① 从业务文档（OpenSpec Scenario / fw_dev_spec 活文档）生成 Markdown 测试用例文档；② 经**内嵌人工 Gate（用例审阅）**确认后才生成可执行测试代码（E2E 走 `scripts/testing/` 的 Playwright 执行层）。该 Gate 为角色流程内嵌 Gate（同 ⑤a/⑧a 模式），不占状态机 phase；测试命令执行属敏感操作，须先上报编排器询问；"测试通过"断言受 `cross-cutting.md` 三（完成前验证铁律）约束。
+- **3.5 测试（可选环节，正式）**：定位为主流程可选环节，插在 ⑨→⑩ 之间，由 test-engineer 执行，规则以 `testing.md` 为准。采用**两段式**：① 从业务文档（OpenSpec Scenario / fw_dev_spec 活文档）生成 Markdown 测试用例文档；② 经**内嵌人工 Gate（用例审阅）**确认后才生成可执行测试代码（E2E 走 `scripts/testing/` 的 Playwright 执行层）。该 Gate 为角色流程内嵌 Gate（同 ⑤a/⑧a 模式），不占状态机 phase，但**通过后必须置位**：`node scripts/set-fw-gate.cjs <任务名> testCasesConfirmed --test-cases <用例文档路径>`；已登记 `testCasesDoc` 而未置位时，`validate` 在进入 ⑩ 前阻断。测试命令执行属敏感操作，须先上报编排器询问；"测试通过"断言受 `cross-cutting.md` 三（完成前验证铁律）约束。**测试涉及的本地进程（dev server / mock server）必须按 `cross-cutting.md` 五登记与回收**，结论中附 `fw-process check` 通过证据。
 
 ---
 
 ## 十二、边界与不变量
 
 1. **编排器不亲自写生成类代码**：②⑤⑦b⑦c⑧⑨ 的生成工作必须 dispatch 给对应 agent；编排器只做调度、Gate、状态推进。
-2. **人工 Gate 不可跳过**：④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认（⑤a 由编排器执行、⑦b「模式确认」为内嵌 Gate、⑧a 内嵌于 ⑧），即使 qa-reviewer 报告通过；确认后经 `set-fw-gate.cjs` 置位，未置位不得推进。
+2. **人工 Gate 不可跳过**：④⑤a⑦⑦c⑧a⑪⑫ 必须人工确认（⑤a 由编排器执行、⑦b「模式确认」为内嵌 Gate、⑧a 内嵌于 ⑧、3.5 用例审阅为内嵌 Gate），即使 qa-reviewer 报告通过；确认后经 `set-fw-gate.cjs` 置位（内嵌 Gate 用 `testCasesConfirmed --test-cases`），未置位不得推进。
 3. **reference 规则正文不内联**：agent 文件只做指针引用，执行前必须 `Read` 对应 reference；本协议与各 reference 冲突时，**以各 reference 的领域规则为准**，本协议只管编排。
 4. **两种模式并存**：用户可绕过编排直接 `Read` 单个 reference 使用，多 agent 模式不是唯一入口。
+5. **本地进程必须收口**：长驻进程启动前登记、收尾必回收并校验端口释放；`finish` 默认阻断残留，任何"完成"结论不得带未回收进程（见 `cross-cutting.md` 五）。

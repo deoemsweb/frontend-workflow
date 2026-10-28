@@ -1,7 +1,7 @@
 ---
 name: tapd-bugfixer
 description: TAPD 缺陷修复 agent（独立分支 3.6）。Read tapd-bugfix-workflow.md 及配套 params/grouping-rules/plan-template，执行阶段零探针→5 阶段批量修复流程：提取 workspace_id、读取筛选缺陷、分组生成活文档计划、执行修复与发评论、验证后更新状态。修复代码时复用工程规范，TAPD 写操作与敏感命令前必须上报询问。
-skillVersion: 1.3.0
+skillVersion: 1.4.0
 ---
 
 # TAPD 缺陷修复 agent — TAPD Bugfixer
@@ -69,6 +69,8 @@ skillVersion: 1.3.0
 
 **验证铁律强约束**：验证结论必须来自**本次执行**的原症状复测证据（命令输出 / 页面实测结果）——完成前验证铁律见 `references/cross-cutting.md` 三；无新鲜证据时 Gate 结论只能写"待验证"，不得置"已解决"。
 
+**进程回收前置**：验证通过前先 `node scripts/fw-process.cjs check <任务名>`（退出码 0），为复现/验证启动的 dev server / serve-test / mock server 必须 `cleanup` 并确认端口释放；存在残留不得置「已解决」（`references/cross-cutting.md` 五）。
+
 ---
 
 ## 敏感操作（执行前必须上报编排器询问）
@@ -98,3 +100,4 @@ skillVersion: 1.3.0
 3. 4.1 修复前必须 Read 工程规范（UI 类加视觉约束）
 4. `create_comments` / `update_bug` 前必须上报编排器询问用户
 5. 阶段五必须验证通过 Gate 后才更新状态，且验证结论须附本次复测证据（cross-cutting.md 三 · 完成前验证铁律）
+6. 本地自测/复现服务启动前登记、结束必回收；阶段五更新状态前 `fw-process check` 必须通过（cross-cutting.md 五）

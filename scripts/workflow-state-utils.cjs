@@ -107,23 +107,224 @@ const PHASE_AGENTS = [
 
 /**
  * 内部 phase → 标志产物校验规则
- * - type 'file'   : 校验 PLANS_DIR 下文件存在
- * - type 'dir'    : 校验 PROJECT_ROOT 下目录存在（OpenSpec 或 fw_dev_spec）
- * - type 'gate'   : 人工 Gate，校验 gateChecks 对应字段为 true
- * - type 'none'   : 代码类产物不强制文件校验（交 qa-reviewer + 人工 Gate）
+ * - type 'file'      : 校验 PLANS_DIR 下文件存在
+ * - type 'dir'       : 校验 PROJECT_ROOT 下目录存在（OpenSpec 或 fw_dev_spec）
+ * - type 'bizdoc'    : 校验「本次需求」业务文档（state.bizDocPath 精确校验，缺失回退目录+时间窗口）
+ * - type 'workspace' : 校验 git 工作区存在代码文件变更（非 git 仓库降级为 warning，可 --allow-empty 放行）
+ * - type 'gate'      : 人工 Gate，校验 gateChecks 对应字段为 true
+ * - type 'none'      : 不校验（交付阶段）
  */
 const PHASE_ARTIFACTS = {
-  0: { type: 'none', description: '静态页面代码（不强制文件校验）' },
+  0: { type: 'workspace', description: '静态页面代码变更（git 工作区）' },
   1: { type: 'file', suffix: '-review-static.md', description: '静态页面偏差报告' },
   2: { type: 'gate', gateKey: 'staticConfirmed', description: '静态页面人工验收' },
-  3: { type: 'dir', anyOf: ['openspec', 'fw_dev_spec'], description: '业务文档目录（openspec/ 或 fw_dev_spec/）' },
+  3: { type: 'bizdoc', description: '本次需求业务文档（bizDocPath）' },
   4: { type: 'file', suffix: '-review-prd.md', description: '业务文档偏差报告' },
   5: { type: 'gate', gateKey: 'docConfirmed', description: '业务文档人工确认' },
   6: { type: 'gate', gateKey: 'apiConfirmed', description: '接口定义生成并完成人工验收（⑦b⑦c 合并）' },
-  7: { type: 'none', description: '业务逻辑代码（不强制文件校验）' },
+  7: { type: 'workspace', description: '业务逻辑代码变更（git 工作区）' },
   8: { type: 'file', suffix: '-review-impl.md', description: '业务逻辑偏差报告' },
   9: { type: 'gate', gateKey: 'bizConfirmed', description: '业务人工验收' },
   10: { type: 'none', description: '交付' }
+}
+
+/** 业务文档回退校验的时间窗口（毫秒）：最近 120 分钟内有 Markdown 修改即视为产出 */
+const BIZDOC_FALLBACK_WINDOW_MS = 120 * 60 * 1000
+
+/** git 工作区变更中视为「代码产物」的扩展名 */
+const CODE_EXTENSIONS = new Set([
+  '.vue', '.js', '.jsx', '.mjs', '.cjs', '.ts', '.tsx',
+  '.css', '.scss', '.sass', '.less', '.html', '.htm',
+  '.json', '.wxml', '.wxss', '.wxs'
+])
+
+/** 不计入代码产物的路径前缀（编排产物 / 依赖 / 构建产物 / 文档） */
+const NON_CODE_PREFIXES = [
+  '.codebuddy/', '.bugfix-workflow/', '.verify/', '.git/',
+  'node_modules/', 'dist/', 'dist-web/', 'build/', 'coverage/',
+  'openspec/', 'fw_dev_spec/', 'test-cases/'
+]
+
+/** 同进程内缓存 git 工作区状态（validate 会多次调用 checkPhaseArtifact） */
+let workspaceCache = null
+
+function parsePorcelainPath (line) {
+  // 格式：`XY path` 或 `XY old -> new`（重命名）
+  let p = line.slice(3).trim()
+  const arrow = p.indexOf(' -> ')
+  if (arrow >= 0) p = p.slice(arrow + 4)
+  if (p.startsWith('"') && p.endsWith('"')) p = p.slice(1, -1)
+  return p.replace(/\\/g, '/')
+}
+
+function isCodeChange (relPath) {
+  const lower = relPath.toLowerCase()
+  if (NON_CODE_PREFIXES.some(prefix => lower.startsWith(prefix))) return false
+  const base = lower.split('/').pop()
+  if (['package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'npm-shrinkwrap.json'].includes(base)) return false
+  const ext = base.includes('.') ? `.${base.split('.').pop()}` : ''
+  return CODE_EXTENSIONS.has(ext)
+}
+
+/** 目录（如未跟踪的 `src/`）下是否存在代码文件（限定深度，跳过依赖与点目录） */
+function hasCodeFile (dir, depth = 2) {
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (depth > 0 && hasCodeFile(full, depth - 1)) return true
+      } else if (isCodeChange(entry.name)) {
+        return true
+      }
+    }
+  } catch (e) { /* 目录不可读 */ }
+  return false
+}
+
+/**
+ * 读取 git 工作区代码变更（结果按进程缓存）
+ * @returns {{ isRepo: boolean, changes: string[], error: string|null }}
+ */
+function getWorkspaceChanges () {
+  if (workspaceCache) return workspaceCache
+  workspaceCache = { isRepo: false, changes: [], error: null }
+  try {
+    const inside = execSync('git rev-parse --is-inside-work-tree', {
+      cwd: PROJECT_ROOT, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 8000
+    }).trim()
+    if (inside !== 'true') return workspaceCache
+    workspaceCache.isRepo = true
+    // -uall：未跟踪目录展开到文件，避免只看到 `?? src/` 而误判
+    const out = execSync('git status --porcelain --untracked-files=all', {
+      cwd: PROJECT_ROOT, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], timeout: 8000
+    })
+    workspaceCache.changes = out
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map(parsePorcelainPath)
+      .filter(p => {
+        const lower = p.toLowerCase()
+        if (NON_CODE_PREFIXES.some(prefix => lower.startsWith(prefix))) return false
+        const abs = path.join(PROJECT_ROOT, p)
+        let stat = null
+        try { stat = fs.statSync(abs) } catch (e) { /* 已删除文件 */ }
+        if (stat && stat.isDirectory()) return hasCodeFile(abs, 2)
+        return isCodeChange(p)
+      })
+  } catch (e) {
+    workspaceCache.error = e.message
+  }
+  return workspaceCache
+}
+
+/** 目录下是否存在 Markdown（限定深度，跳过点目录） */
+function hasMarkdown (dir, depth = 2) {
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) return true
+      if (entry.isDirectory() && depth > 0 && !entry.name.startsWith('.')) {
+        if (hasMarkdown(path.join(dir, entry.name), depth - 1)) return true
+      }
+    }
+  } catch (e) { /* 目录不存在或不可读 */ }
+  return false
+}
+
+/** 目录下最近修改的 Markdown（限定深度与时间窗口） */
+function findRecentMarkdown (dir, depth, cutoff) {
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isFile() && entry.name.toLowerCase().endsWith('.md')) {
+        try {
+          if (fs.statSync(full).mtimeMs >= cutoff) return full
+        } catch (e) { /* 忽略 stat 失败 */ }
+      }
+      if (entry.isDirectory() && depth > 0 && !entry.name.startsWith('.')) {
+        const hit = findRecentMarkdown(full, depth - 1, cutoff)
+        if (hit) return hit
+      }
+    }
+  } catch (e) { /* 目录不存在或不可读 */ }
+  return null
+}
+
+/** 回退：扫描 openspec/changes 下的 change 目录与 fw_dev_spec 各需求 specs 目录中的近期 Markdown */
+function findFallbackBizDoc () {
+  const cutoff = Date.now() - BIZDOC_FALLBACK_WINDOW_MS
+  const candidates = []
+
+  const changesDir = path.join(PROJECT_ROOT, 'openspec', 'changes')
+  try {
+    for (const entry of fs.readdirSync(changesDir, { withFileTypes: true })) {
+      if (entry.isDirectory()) candidates.push({ dir: path.join(changesDir, entry.name), depth: 2 })
+    }
+  } catch (e) { /* 无 openspec/changes */ }
+
+  const fwDir = path.join(PROJECT_ROOT, 'fw_dev_spec')
+  try {
+    for (const entry of fs.readdirSync(fwDir, { withFileTypes: true })) {
+      if (entry.isDirectory()) candidates.push({ dir: path.join(fwDir, entry.name, 'specs'), depth: 1 })
+    }
+  } catch (e) { /* 无 fw_dev_spec */ }
+
+  for (const c of candidates) {
+    const hit = findRecentMarkdown(c.dir, c.depth, cutoff)
+    if (hit) return hit
+  }
+  return null
+}
+
+/** 校验业务文档（精确路径优先，缺失回退目录 + 时间窗口） */
+function checkBizDoc (state) {
+  if (state?.bizDocPlan === 'skip') {
+    return { pass: true, description: '业务文档（⑤a 已确认跳过）', detail: 'bizDocPlan=skip' }
+  }
+
+  const rel = state?.bizDocPath
+  if (rel) {
+    const abs = path.resolve(PROJECT_ROOT, rel)
+    if (!fs.existsSync(abs)) {
+      return {
+        pass: false,
+        description: '本次业务文档不存在',
+        detail: `bizDocPath=${rel}（解析为 ${abs}）；请确认 ⑤ 已产出，并用 set-fw-gate ... --biz-doc <path> 重新登记`
+      }
+    }
+    const st = fs.statSync(abs)
+    if (st.isFile()) {
+      return st.size > 0
+        ? { pass: true, description: '本次业务文档', detail: `${rel}（${st.size} bytes）` }
+        : { pass: false, description: '本次业务文档为空', detail: rel }
+    }
+    const markers = ['proposal.md', 'tasks.md', 'design.md', 'specs']
+    const hasMarker = markers.some(m => fs.existsSync(path.join(abs, m)))
+    if (hasMarker || hasMarkdown(abs, 2)) {
+      return { pass: true, description: '本次业务文档目录', detail: rel }
+    }
+    return {
+      pass: false,
+      description: '本次业务文档目录内无有效文档',
+      detail: `${rel} 需包含 proposal.md / tasks.md / design.md / specs/ 或任意 Markdown`
+    }
+  }
+
+  const fallback = findFallbackBizDoc()
+  if (fallback) {
+    return {
+      pass: true,
+      description: '业务文档（回退校验）',
+      detail: path.relative(PROJECT_ROOT, fallback),
+      warnings: ['未登记 bizDocPath，已回退「目录 + 最近 120 分钟 Markdown」校验；建议 ⑤ 完成后调用 node scripts/set-fw-gate.cjs <任务名> docConfirmed --biz-doc <路径> 精确登记']
+    }
+  }
+
+  return {
+    pass: false,
+    description: '未找到本次业务文档',
+    detail: '未登记 bizDocPath，且 openspec/changes/* 与 fw_dev_spec/*/specs 下最近 120 分钟内无 Markdown；请产出文档后登记 bizDocPath'
+  }
 }
 
 // ─── 状态文件操作 ───────────────────────────────────────────────
@@ -202,10 +403,11 @@ function isPhaseCompleted (state, n) {
  * 检查指定 phase 的标志产物
  * @param {string} taskName
  * @param {number} phaseNum
- * @param {Object} [state] - 状态对象（gate 类校验需要）
- * @returns {{ pass: boolean, description: string, detail?: string }}
+ * @param {Object} [state] - 状态对象（gate / bizdoc / workspace 校验需要）
+ * @param {{ allowEmpty?: boolean }} [options] - allowEmpty: 显式允许代码阶段无产出（--allow-empty）
+ * @returns {{ pass: boolean, description: string, detail?: string, warnings?: string[] }}
  */
-function checkPhaseArtifact (taskName, phaseNum, state) {
+function checkPhaseArtifact (taskName, phaseNum, state, options = {}) {
   const art = PHASE_ARTIFACTS[phaseNum]
   if (!art) return { pass: true, description: '无' }
 
@@ -225,6 +427,44 @@ function checkPhaseArtifact (taskName, phaseNum, state) {
       return found
         ? { pass: true, description: art.description, detail: found }
         : { pass: false, description: `${art.description} 缺失`, detail: art.anyOf.join(' 或 ') }
+    }
+
+    case 'bizdoc':
+      return checkBizDoc(state)
+
+    case 'workspace': {
+      const allowedByFlag = options.allowEmpty === true
+      const allowedByState = !!state?.allowEmptyPhases?.[String(phaseNum)]
+      if (allowedByFlag || allowedByState) {
+        return {
+          pass: true,
+          description: art.description,
+          detail: `已显式允许空产出（${allowedByFlag ? '--allow-empty' : 'allowEmptyPhases 留痕'}）`,
+          warnings: [`phase ${phaseNum}（${getPhaseDisplay(phaseNum)}）代码变更校验被 --allow-empty 放行，已记录 allowEmptyPhases`]
+        }
+      }
+
+      const ws = getWorkspaceChanges()
+      if (!ws.isRepo) {
+        return {
+          pass: true,
+          description: art.description,
+          detail: '非 git 仓库，跳过工作区变更校验',
+          warnings: [`未检测到 git 仓库（或 git 不可用），phase ${phaseNum}（${getPhaseDisplay(phaseNum)}）代码变更校验已跳过`]
+        }
+      }
+      if (ws.changes.length > 0) {
+        return {
+          pass: true,
+          description: art.description,
+          detail: `${ws.changes.length} 个代码文件变更（如 ${ws.changes[0]}）`
+        }
+      }
+      return {
+        pass: false,
+        description: `${art.description} 未检测到`,
+        detail: 'git 工作区无代码文件变更；若本次确无代码产出（如纯配置/纯文档任务），追加 --allow-empty 重试并在状态文件留痕'
+      }
     }
 
     case 'gate': {
@@ -276,5 +516,8 @@ module.exports = {
   isPhaseCompleted,
 
   checkPhaseArtifact,
+  checkBizDoc,
+  getWorkspaceChanges,
+  findFallbackBizDoc,
   getUnresolvedConfirmations
 }
